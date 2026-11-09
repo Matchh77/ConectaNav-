@@ -3,6 +3,7 @@
 ## 1. Supabase (grátis)
 1. Crie um projeto em supabase.com.
 2. SQL Editor → cole `supabase/schema.sql` → Run.
+   *(Nota: se você já possui um banco ConectaNav anterior, basta rodar o script `supabase/migration_v2.sql` no SQL Editor para liberar as novas tags e áreas acadêmicas CNPq).*
 3. Authentication → URL Configuration: em *Site URL* e *Redirect URLs* coloque o domínio do Vercel (ex.: `https://conectanav.vercel.app`).
 4. Authentication → SMTP: configure um SMTP próprio (Resend, Brevo etc.). O envio padrão do Supabase é muito limitado e não serve para produção.
 5. Settings → API: copie `Project URL`, `anon key` e `service_role key`.

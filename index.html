@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0052CC">
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" href="/icon-192.png">
+<link rel="icon" href="/WhatsApp Image 2026-11-09 at 09.20.21.jpeg">
 <title>ConectaNav — Vagas e talentos de Naviraí-MS</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
@@ -15,331 +15,1709 @@
 @media (prefers-color-scheme:dark){:root{--bg:#0F1720;--card:#1A2530;--text:#F3F4F6;--muted:#9CA3AF;--border:#2A3644;--brand-light:#13233F}}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 .card{background:var(--card);border:1px solid var(--border)}
-.chip{border:1px solid var(--border);color:var(--text);transition:.15s}
+.chip{border:1px solid var(--border);color:var(--text);transition:.15s;background:transparent}
 .chip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
-.lb{font-size:12px;font-weight:500;color:var(--muted)}
-.fi{width:100%;margin-top:4px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:transparent;color:var(--text)}
-.btn{display:block;text-align:center;width:100%;padding:10px;border-radius:12px;color:#fff;font-weight:600;font-size:14px;background:var(--brand)}
-.btn2{display:block;text-align:center;width:100%;padding:9px;border-radius:12px;font-weight:600;font-size:14px;border:1.5px solid var(--brand);color:var(--brand)}
+.lb{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.025em}
+.fi{width:100%;margin-top:4px;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:transparent;color:var(--text);outline:none;transition:border-color .15s}
+.fi:focus{border-color:var(--brand)}
+.btn{display:inline-flex;align-items:center;justify-content:center;width:100%;padding:10px 14px;border-radius:12px;color:#fff;font-weight:600;font-size:14px;background:var(--brand);transition:opacity .15s;cursor:pointer}
+.btn:hover{opacity:0.92}
+.btn2{display:inline-flex;align-items:center;justify-content:center;width:100%;padding:9px 14px;border-radius:12px;font-weight:600;font-size:14px;border:1.5px solid var(--brand);color:var(--brand);background:transparent;transition:background-color .15s;cursor:pointer}
+.btn2:hover{background:var(--brand-light)}
 .tag{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--brand-light);color:var(--brand)}
 .mut{color:var(--muted)}
+.tab-btn{position:relative;padding:12px 14px;font-size:13px;font-weight:600;color:var(--muted);transition:.2s;border-bottom:2px solid transparent;white-space:nowrap}
+.tab-btn.active{color:var(--brand);border-color:var(--brand);font-weight:700}
 .toast{animation:up .25s ease-out}@keyframes up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
 </style>
 </head>
-<body class="min-h-screen">
-<nav class="sticky top-0 z-30 card border-b">
-  <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold" style="background:var(--brand)">C</div><span class="font-bold text-lg">ConectaNav</span></div>
-    <span id="roleBadge" class="tag"></span>
+<body class="min-h-screen flex flex-col">
+
+<header class="sticky top-0 z-30 card border-b shadow-xs">
+  <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2 cursor-pointer" onclick="goHome()">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold" style="background:var(--brand)">C</div>
+      <div class="leading-tight">
+        <span class="font-bold text-lg tracking-tight">ConectaNav</span>
+        <span class="hidden sm:inline text-xs mut ml-1">· Naviraí-MS</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span id="roleBadge" class="tag font-medium"></span>
+      <span id="userActions"></span>
+    </div>
   </div>
-</nav>
-<main id="app" class="max-w-3xl mx-auto px-4 py-5 pb-24"></main>
-<div id="toasts" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center px-4 w-full max-w-sm"></div>
+  <div id="subnav" class="border-t overflow-x-auto scrollbar-none"></div>
+</header>
+
+<main id="app" class="flex-1 max-w-4xl w-full mx-auto px-4 py-6 pb-28"></main>
+
+<div id="toasts" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center px-4 w-full max-w-sm pointer-events-none"></div>
 <div id="modal"></div>
 
 <script>
-const SKILLS=['Atendimento ao Cliente','Operador de Caixa','Reposição de Estoque','Informática Básica','Vendas','Pacote Office'];
-const BAIRROS=['Centro','Jardim MS','Vila Maria','Cidade Jardim','BR-163'];
-const TURNOS=['Manhã','Tarde','Noite','Integral'];
-const NEI={'Centro':['Vila Maria','Cidade Jardim'],'Jardim MS':['Vila Maria','BR-163'],'Vila Maria':['Centro','Jardim MS'],'Cidade Jardim':['Centro','BR-163'],'BR-163':['Jardim MS','Cidade Jardim']};
-const STAT=['Análise','Entrevista Agendada','Não selecionado'];
-const STAT_UI={'Análise':['#FEF3C7','#92400E','⏳ Em Análise'],'Entrevista Agendada':['#DCFCE7','#166534','📅 Entrevista Agendada'],'Não selecionado':['#FEE2E2','#991B1B','✖️ Não selecionado']};
-const CAT={'Atendimento ao Cliente':'Negócios e Gestão','Operador de Caixa':'Negócios e Gestão','Reposição de Estoque':'Negócios e Gestão','Vendas':'Negócios e Gestão','Informática Básica':'Tecnologias','Pacote Office':'Tecnologias'};
-const IFMS='https://cursoslivres.ifms.edu.br/#cursos', AVA='https://ava.cursoslivres.ifms.edu.br/login/index.php';
-const FONTES=['IFMS Cursos Livres','Sistema S (SENAC/SENAI/SEBRAE)','Outro'];
+// ==================== TABELA CNPQ & CAPES ====================
+const CNPQ_AREAS = {
+  'Ciências Exatas e da Terra': [
+    'Ciência da Computação / Informática',
+    'Matemática',
+    'Física',
+    'Química',
+    'Geociências / Geologia',
+    'Estatística',
+    'Outro curso de Exatas'
+  ],
+  'Ciências Biológicas': [
+    'Biologia Geral',
+    'Genética',
+    'Botânica',
+    'Zoologia',
+    'Ecologia / Meio Ambiente',
+    'Microbiologia',
+    'Outro curso de Biológicas'
+  ],
+  'Engenharias': [
+    'Sistemas Fotovoltaicos / Energia Solar',
+    'Engenharia Elétrica / Eletrotécnica',
+    'Engenharia de Energia',
+    'Engenharia Civil / Edificações',
+    'Engenharia Mecânica',
+    'Engenharia de Produção',
+    'Engenharia de Alimentos',
+    'Engenharia Agrícola',
+    'Outra Engenharia'
+  ],
+  'Ciências da Saúde': [
+    'Enfermagem / Técnico de Enfermagem',
+    'Farmácia',
+    'Educação Física',
+    'Fisioterapia',
+    'Nutrição',
+    'Odontologia',
+    'Medicina',
+    'Saúde Coletiva / Radiologia',
+    'Outro curso de Saúde'
+  ],
+  'Ciências Agrárias': [
+    'Agronomia / Agropecuária',
+    'Recursos Florestais / Silvicultura',
+    'Medicina Veterinária',
+    'Zootecnia',
+    'Agroindústria / Alimentos',
+    'Mecanização Agrícola',
+    'Outro curso de Agrárias'
+  ],
+  'Ciências Sociais Aplicadas': [
+    'Administração / Gestão Comercial',
+    'Ciências Contábeis / Finanças',
+    'Direito',
+    'Comunicação / Marketing / Publicidade',
+    'Arquitetura e Urbanismo',
+    'Economia',
+    'Logística',
+    'Recursos Humanos',
+    'Outro curso de Sociais Aplicadas'
+  ],
+  'Ciências Humanas': [
+    'Educação / Pedagogia',
+    'Psicologia',
+    'História',
+    'Geografia',
+    'Filosofia',
+    'Sociologia',
+    'Outro curso de Humanas'
+  ],
+  'Linguística, Letras e Artes': [
+    'Letras / Idiomas (Inglês, Espanhol)',
+    'Linguística',
+    'Design Gráfico / Digital',
+    'Artes Visuais',
+    'Música',
+    'Artes Cênicas / Fotografia',
+    'Outro curso de Letras/Artes'
+  ],
+  'Outros / Multidisciplinar': [
+    'Ciências Ambientais',
+    'Biotecnologia',
+    'Materiais',
+    'Segurança do Trabalho',
+    'Gestão Pública',
+    'Outro curso multidisciplinar'
+  ]
+};
 
-const cfg=window.CONECTANAV||{};
-const sb=(cfg.SUPABASE_URL&&window.supabase)?supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY):null;
-const blankD=()=>({name:'',age:'',phone:'',bairro:'Centro',turno:'Manhã',ifms:false,tags:[],courses:[]});
-const blankJ=()=>({company:'',bairro:'Centro',cargo:'',turno:'Manhã',tags:[]});
-const blankC=()=>({name:'',hours:'',url:'',src:FONTES[0]});
-let S,D=blankD(),J=blankJ(),C=blankC(),OB={role:'candidato',consent:false},EMAIL='',pollT=null;
-function resetS(){S={loading:true,user:null,role:null,me:null,jobs:[],cands:[],apps:[],unlocks:new Set(),phones:{},freeUsed:false,selJob:null,editJob:null,pix:null,sent:false};D=blankD();J=blankJ();C=blankC();}
+// ==================== CATÁLOGO AMPLO DE HABILIDADES / TAGS ====================
+const DEFAULT_SKILLS = [
+  // Atendimento & Balcão
+  'Atendimento ao Cliente', 'Vendas', 'Operador de Caixa', 'Balconista', 'Organização de Loja', 'Negociação', 'Pós-Venda', 'Atendimento Telefônico',
+  // Administração & Escritório
+  'Rotinas Administrativas', 'Pacote Office', 'Excel Avançado', 'Controle de Estoque', 'Emissão de NFe', 'Cobrança', 'Recepção', 'Recursos Humanos', 'Contabilidade Básica',
+  // Tecnologia & Informática
+  'Informática Básica', 'Informática Avançada', 'Marketing Digital', 'Redes Sociais', 'Design Gráfico / Canva', 'Suporte Técnico', 'Manutenção de Computadores', 'Programação Web',
+  // Operacional & Logística
+  'Reposição de Estoque', 'Logística e Expedição', 'Carga e Descarga', 'Auxiliar de Produção', 'Limpeza e Higienização', 'Manutenção Predial', 'CNH A/B / Entregas', 'Conferente de Mercadorias',
+  // Energia & Fotovoltaica (IFMS / Eletrotécnica)
+  'Instalação de Sistemas Fotovoltaicos', 'Eletricidade Básica / NR-10', 'Manutenção Elétrica', 'Projetos Solares',
+  // Agronegócio & Campo
+  'Manejo Agropecuário', 'Mecanização Agrícola / Trator', 'Monitoramento de Safra', 'Armazenamento de Grãos', 'Nutrição Animal'
+];
+
+const BAIRROS = ['Centro', 'Jardim MS', 'Vila Maria', 'Cidade Jardim', 'BR-163'];
+const TURNOS = ['Manhã', 'Tarde', 'Noite', 'Integral'];
+const NEI = {
+  'Centro': ['Vila Maria', 'Cidade Jardim'],
+  'Jardim MS': ['Vila Maria', 'BR-163'],
+  'Vila Maria': ['Centro', 'Jardim MS'],
+  'Cidade Jardim': ['Centro', 'BR-163'],
+  'BR-163': ['Jardim MS', 'Cidade Jardim']
+};
+const STAT = ['Análise', 'Entrevista Agendada', 'Não selecionado'];
+const STAT_UI = {
+  'Análise': ['#FEF3C7', '#92400E', '⏳ Em Análise'],
+  'Entrevista Agendada': ['#DCFCE7', '#166534', '📅 Entrevista Agendada'],
+  'Não selecionado': ['#FEE2E2', '#991B1B', '✖️ Não selecionado']
+};
+const IFMS = 'https://cursoslivres.ifms.edu.br/#cursos';
+const AVA = 'https://ava.cursoslivres.ifms.edu.br/login/index.php';
+const FONTES = ['IFMS Cursos Livres', 'Sistema S (SENAC/SENAI/SEBRAE)', 'Outro'];
+
+// Configuração Supabase
+const cfg = window.CONECTANAV || {};
+const sb = (cfg.SUPABASE_URL && window.supabase) ? supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
+
+// Estados em branco
+const blankD = () => ({
+  name: '',
+  age: '',
+  phone: '',
+  bairro: 'Centro',
+  turno: 'Manhã',
+  area: 'Ciências Exatas e da Terra',
+  subarea: 'Ciência da Computação / Informática',
+  customSubarea: '',
+  tags: [],
+  courses: []
+});
+
+const blankJ = () => ({
+  company: '',
+  bairro: 'Centro',
+  cargo: '',
+  turno: 'Manhã',
+  area: '',
+  tags: []
+});
+
+const blankC = () => ({ name: '', hours: '', url: '', src: FONTES[0] });
+
+let S, D = blankD(), J = blankJ(), C = blankC(), OB = { role: 'candidato', consent: false }, EMAIL = '', pollT = null;
+
+function resetS() {
+  S = {
+    loading: true,
+    user: null,
+    role: null,
+    tab: 'vagas', // candidato: 'cadastro', 'vagas', 'cursos' | empresa: 'vagas', 'triagem'
+    vagasSubtab: 'abertas', // 'abertas' | 'candidaturas'
+    me: null,
+    jobs: [],
+    cands: [],
+    apps: [],
+    unlocks: new Set(),
+    phones: {},
+    freeUsed: false,
+    selJob: null,
+    editJob: null,
+    pix: null,
+    sent: false,
+    filterStatus: 'todos',
+    filterArea: '',
+    jobSearch: '',
+    jobAreaFilter: ''
+  };
+  D = blankD();
+  J = blankJ();
+  C = blankC();
+}
 resetS();
 
-// ---------- helpers ----------
-const $=id=>document.getElementById(id);
-const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const okTags=a=>(a||[]).filter(t=>SKILLS.includes(t));
-const chip=(l,a,fn)=>`<button type="button" onclick="${fn}" class="chip px-3 py-1.5 rounded-full text-xs sm:text-sm ${a?'active':''}">${esc(l)}</button>`;
-const inp=(l,v,fn,ph,t='text')=>`<div><label class="lb">${l}</label><input type="${t}" value="${esc(v)}" oninput="${fn}" placeholder="${ph}" class="fi"></div>`;
-const sel=(l,opts,v,fn)=>`<div><label class="lb">${l}</label><select onchange="${fn}" class="fi">${opts.map(o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`).join('')}</select></div>`;
-function toast(m){const e=document.createElement('div');e.className='toast px-4 py-2.5 rounded-xl shadow-lg text-sm font-medium text-white text-center';e.style.background='#0052CC';e.textContent=m;$('toasts').appendChild(e);setTimeout(()=>{e.style.transition='opacity .3s';e.style.opacity=0;setTimeout(()=>e.remove(),300)},3200);}
-function notify(t,b){toast(t+' '+b);try{if('Notification' in window&&Notification.permission==='granted')new Notification(t,{body:b,icon:'/icon-192.png'});}catch(e){}}
-function maskPhone(el){let v=el.value.replace(/\D/g,'').slice(0,11);
-  v=v.length>10?v.replace(/^(\d{2})(\d{5})(\d{4})$/,'($1) $2-$3'):v.length>6?v.replace(/^(\d{2})(\d{4})(\d{0,4})$/,'($1) $2-$3'):v.length>2?v.replace(/^(\d{2})(\d{0,5})$/,'($1) $2'):v.length?'('+v:'';
-  el.value=v;D.phone=v;}
-const waNum=p=>{let c=String(p||'').replace(/\D/g,'');return(c.length===10||c.length===11)?'55'+c:c;};
-function score(c,j){if(!j)return 0;const t=j.tags.length?c.tags.filter(x=>j.tags.includes(x)).length/j.tags.length:0;
-  const u=(c.turno===j.turno||c.turno==='Integral')?1:0;const g=c.bairro===j.bairro?1:(NEI[j.bairro]||[]).includes(c.bairro)?.5:0;
-  return Math.round(t*50+u*25+g*25);}
-const upD=(f,v)=>{D[f]=v};const upJ=(f,v)=>{J[f]=v};const upC=(f,v)=>{C[f]=v};
-const setD=(f,v)=>{D[f]=v;render()};const setJ=(f,v)=>{J[f]=v;render()};
-function tog(o,t){const a=(o==='D'?D:J).tags,i=a.indexOf(t);i>-1?a.splice(i,1):a.push(t);render();}
-
-// ---------- dados ----------
-async function loadAll(){
-  const uid=S.user.id;
-  const p=await sb.from('profiles').select('*').eq('id',uid).maybeSingle();
-  S.role=p.data?p.data.role:null;S.freeUsed=!!(p.data&&p.data.free_unlock_used);
-  if(S.role){await loadData(true);subscribe();}
-  S.loading=false;render();
+// ==================== HELPER DE NORMALIZAÇÃO & LIGAÇÃO DE TAGS ====================
+function normalizeText(str) {
+  return String(str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
 }
-async function loadData(first){
-  const uid=S.user.id;
-  S.jobs=(await sb.from('jobs').select('*').order('created_at',{ascending:false})).data||[];
-  S.jobs.forEach(j=>j.tags=okTags(j.tags));
-  if(S.role==='candidato'){
-    const old=Object.fromEntries(S.apps.map(a=>[a.id,a.status]));
-    S.apps=(await sb.from('applications').select('*').eq('candidate_id',uid)).data||[];
-    if(!first)S.apps.forEach(a=>{if(old[a.id]&&old[a.id]!==a.status){const j=S.jobs.find(x=>x.id===a.job_id);notify('Candidatura atualizada',(j?j.cargo+': ':'')+a.status);}});
-    if(first){
-      const me=(await sb.from('candidates').select('*').eq('user_id',uid).maybeSingle()).data;
-      if(me){me.tags=okTags(me.tags);S.me=me;
-        const ph=(await sb.from('candidate_contacts').select('phone').eq('user_id',uid).maybeSingle()).data;
-        D={name:me.name,age:me.age,phone:ph?ph.phone:'',bairro:me.bairro,turno:me.turno,ifms:me.ifms,tags:[...me.tags],courses:Array.isArray(me.courses)?me.courses:[]};}
+
+// Mapa de sinônimos e afinidades semânticas
+const SYNONYMS = {
+  'caixa': ['operador de caixa', 'frente de caixa', 'caixa registradora', 'pdv'],
+  'vendas': ['vendedor', 'vendedora', 'balconista', 'atendimento e vendas', 'comercial', 'negociacao'],
+  'solar': ['fotovoltaica', 'sistemas fotovoltaicos', 'energia solar', 'instalacao solar', 'eletricidade'],
+  'fotovoltaica': ['solar', 'sistemas fotovoltaicos', 'energia solar', 'eletricista solar'],
+  'office': ['excel', 'word', 'pacote office', 'informatica', 'planilhas'],
+  'excel': ['pacote office', 'planilhas', 'excel avancado', 'planilha excel'],
+  'estoque': ['reposicao de estoque', 'almoxarifado', 'controle de estoque', 'estoquista', 'conferente'],
+  'ti': ['informatica', 'computacao', 'suporte tecnico', 'programacao', 'desenvolvimento web'],
+  'marketing': ['redes sociais', 'marketing digital', 'divulgacao', 'design', 'canva'],
+  'agro': ['agronomia', 'agropecuaria', 'safra', 'trator', 'campo', 'mecanizacao agricola']
+};
+
+function tagsMatch(tag1, tag2) {
+  const n1 = normalizeText(tag1);
+  const n2 = normalizeText(tag2);
+  if (!n1 || !n2) return false;
+  if (n1 === n2) return true;
+  if (n1.includes(n2) || n2.includes(n1)) return true;
+  for (const [key, list] of Object.entries(SYNONYMS)) {
+    const normList = [key, ...list].map(normalizeText);
+    const has1 = normList.some(item => n1.includes(item) || item.includes(n1));
+    const has2 = normList.some(item => n2.includes(item) || item.includes(n2));
+    if (has1 && has2) return true;
+  }
+  return false;
+}
+
+function getAllKnownSkills() {
+  const set = new Set(DEFAULT_SKILLS);
+  (S.jobs || []).forEach(j => (j.tags || []).forEach(t => t && set.add(t)));
+  (S.cands || []).forEach(c => (c.tags || []).forEach(t => t && set.add(t)));
+  (D.tags || []).forEach(t => t && set.add(t));
+  (J.tags || []).forEach(t => t && set.add(t));
+  return Array.from(set).sort();
+}
+
+function okTags(a) {
+  return Array.isArray(a) ? a.filter(t => typeof t === 'string' && t.trim().length > 0) : [];
+}
+
+// ==================== CÁLCULO DE MATCH SCORE ====================
+function score(c, j) {
+  if (!j) return 0;
+  let matchedCount = 0;
+  if (j.tags && j.tags.length > 0) {
+    j.tags.forEach(jt => {
+      const has = (c.tags || []).some(ct => tagsMatch(ct, jt));
+      if (has) matchedCount++;
+    });
+  }
+  const tagRatio = j.tags && j.tags.length ? (matchedCount / j.tags.length) : 1;
+  const turnoRatio = (c.turno === j.turno || c.turno === 'Integral') ? 1 : 0;
+  const bairroRatio = (c.bairro === j.bairro) ? 1 : ((NEI[j.bairro] || []).includes(c.bairro) ? 0.5 : 0);
+
+  // Se a vaga especificou Área Acadêmica CNPq
+  if (j.area && j.area.trim()) {
+    const areaRatio = (c.area === j.area) ? 1 : 0;
+    return Math.round(tagRatio * 40 + areaRatio * 20 + turnoRatio * 20 + bairroRatio * 20);
+  }
+  return Math.round(tagRatio * 50 + turnoRatio * 25 + bairroRatio * 25);
+}
+
+function getMatchedTags(c, j) {
+  if (!j || !j.tags) return [];
+  return (c.tags || []).filter(ct => j.tags.some(jt => tagsMatch(ct, jt)));
+}
+
+// ==================== HELPERS DE UI ====================
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const chip = (l, a, fn) => `<button type="button" onclick="${fn}" class="chip px-3 py-1.5 rounded-xl text-xs sm:text-sm ${a ? 'active' : ''}">${esc(l)}</button>`;
+const inp = (l, v, fn, ph, t = 'text') => `<div><label class="lb">${l}</label><input type="${t}" value="${esc(v)}" oninput="${fn}" placeholder="${ph}" class="fi"></div>`;
+const sel = (l, opts, v, fn) => `<div><label class="lb">${l}</label><select onchange="${fn}" class="fi">${opts.map(o => `<option value="${esc(o)}" ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></div>`;
+
+function toast(m) {
+  const e = document.createElement('div');
+  e.className = 'toast px-4 py-2.5 rounded-xl shadow-lg text-sm font-semibold text-white text-center pointer-events-auto';
+  e.style.background = '#0052CC';
+  e.textContent = m;
+  $('toasts').appendChild(e);
+  setTimeout(() => {
+    e.style.transition = 'opacity .3s';
+    e.style.opacity = '0';
+    setTimeout(() => e.remove(), 300);
+  }, 3200);
+}
+
+function notify(t, b) {
+  toast(t + ' ' + b);
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(t, { body: b, icon: '/WhatsApp Image 2026-11-09 at 09.20.21.jpeg' });
     }
-  }else{
-    S.cands=((await sb.from('candidates').select('*')).data||[]).map(c=>({...c,tags:okTags(c.tags),courses:Array.isArray(c.courses)?c.courses:[]}));
-    S.apps=(await sb.from('applications').select('*')).data||[];
-    S.unlocks=new Set(((await sb.from('unlocks').select('candidate_id').eq('company_id',uid)).data||[]).map(x=>x.candidate_id));
-    await loadPhones();
-    const own=S.jobs.filter(j=>j.owner_id===uid);
-    if(!own.find(j=>j.id===S.selJob))S.selJob=own[0]?own[0].id:null;
-    if(first&&own[0])J.company=own[0].company;
+  } catch (e) {}
+}
+
+function maskPhone(el) {
+  let v = el.value.replace(/\D/g, '').slice(0, 11);
+  v = v.length > 10 ? v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3')
+    : v.length > 6 ? v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3')
+    : v.length > 2 ? v.replace(/^(\d{2})(\d{0,5})$/, '($1) $2')
+    : v.length ? '(' + v : '';
+  el.value = v;
+  D.phone = v;
+}
+
+const waNum = p => {
+  let c = String(p || '').replace(/\D/g, '');
+  return (c.length === 10 || c.length === 11) ? '55' + c : c;
+};
+
+const upD = (f, v) => { D[f] = v; };
+const upJ = (f, v) => { J[f] = v; };
+const upC = (f, v) => { C[f] = v; };
+const setD = (f, v) => { D[f] = v; render(); };
+const setJ = (f, v) => { J[f] = v; render(); };
+
+function setTab(t) {
+  S.tab = t;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goHome() {
+  if (!S.role) return;
+  S.tab = S.role === 'candidato' ? 'vagas' : 'vagas';
+  render();
+}
+
+function onAreaChange(area) {
+  D.area = area;
+  const subs = CNPQ_AREAS[area] || [];
+  D.subarea = subs[0] || '';
+  render();
+}
+
+function tog(o, t) {
+  const a = (o === 'D' ? D : J).tags;
+  const i = a.indexOf(t);
+  i > -1 ? a.splice(i, 1) : a.push(t);
+  render();
+}
+
+function delTag(o, t) {
+  const a = (o === 'D' ? D : J).tags;
+  const i = a.indexOf(t);
+  if (i > -1) {
+    a.splice(i, 1);
+    render();
   }
 }
-async function loadPhones(){const ids=[...S.unlocks];if(!ids.length)return;
-  const r=(await sb.from('candidate_contacts').select('user_id,phone').in('user_id',ids)).data||[];r.forEach(x=>S.phones[x.user_id]=x.phone);}
-function subscribe(){if(S.ch)return;
-  const f=async()=>{await loadData(false);if(S.pix&&S.unlocks.has(S.pix.id)){closePix();toast('✅ Pagamento confirmado! Contato liberado.');}render();};
-  S.ch=sb.channel('cn').on('postgres_changes',{event:'*',schema:'public',table:'applications'},f)
-    .on('postgres_changes',{event:'*',schema:'public',table:'unlocks'},f)
-    .on('postgres_changes',{event:'*',schema:'public',table:'jobs'},f).subscribe();}
 
-// ---------- auth / LGPD ----------
-let AUTH={mode:'login',pw:'',pw2:''};
-const okEmail=()=>/^\S+@\S+\.\S+$/.test(EMAIL);
-function authMode(m){AUTH.mode=m;AUTH.pw='';AUTH.pw2='';S.sent=false;render();}
-async function signIn(){
-  if(!okEmail()||!AUTH.pw)return toast('⚠️ Informe e-mail e senha');
-  const r=await sb.auth.signInWithPassword({email:EMAIL,password:AUTH.pw});
-  if(r.error)return toast('⚠️ '+(r.error.message==='Invalid login credentials'?'E-mail ou senha incorretos':r.error.message));
-  AUTH.pw='';}
-async function signUp(){
-  if(!okEmail())return toast('⚠️ Informe um e-mail válido');
-  if(AUTH.pw.length<8)return toast('⚠️ A senha precisa ter ao menos 8 caracteres');
-  if(AUTH.pw!==AUTH.pw2)return toast('⚠️ As senhas não conferem');
-  const r=await sb.auth.signUp({email:EMAIL,password:AUTH.pw,options:{emailRedirectTo:location.origin}});
-  if(r.error)return toast('⚠️ '+r.error.message);
-  AUTH.pw=AUTH.pw2='';
-  if(!r.data.session){S.sent='confirm';render();}}
-async function resetPw(){
-  if(!okEmail())return toast('⚠️ Informe seu e-mail');
-  const r=await sb.auth.resetPasswordForEmail(EMAIL,{redirectTo:location.origin});
-  if(r.error)return toast('⚠️ '+r.error.message);S.sent='reset';render();}
-async function setNewPw(){
-  if(AUTH.pw.length<8||AUTH.pw!==AUTH.pw2)return toast('⚠️ Use 8+ caracteres e repita a mesma senha');
-  const r=await sb.auth.updateUser({password:AUTH.pw});
-  if(r.error)return toast('⚠️ '+r.error.message);
-  S.recovery=false;AUTH.pw=AUTH.pw2='';render();toast('✅ Senha alterada!');}
-async function createProfile(){
-  if(!OB.consent)return toast('⚠️ É preciso aceitar a Política de Privacidade');
-  const r=await sb.from('profiles').insert({id:S.user.id,role:OB.role});
-  if(r.error)return toast('⚠️ '+r.error.message);
-  S.role=OB.role;S.loading=true;render();await loadData(true);subscribe();S.loading=false;render();}
-async function logout(){if(S.ch){sb.removeChannel(S.ch);}await sb.auth.signOut();}
-async function deleteAccount(){
-  if(!confirm('Excluir sua conta e TODOS os seus dados? Isso não pode ser desfeito.'))return;
-  const r=await sb.rpc('delete_my_account');if(r.error)return toast('⚠️ '+r.error.message);
-  await logout();toast('Conta excluída.');}
-function showPrivacy(){$('modal').innerHTML=`<div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.5)"><div class="card rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-auto text-sm space-y-2">
-<h3 class="font-bold text-lg">Política de Privacidade (rascunho)</h3>
-<p><b>Dados coletados:</b> nome, idade, bairro, turno, habilidades, cursos informados, telefone e e-mail de acesso.</p>
-<p><b>Finalidade:</b> conectar candidatos e lojistas de Naviraí-MS para vagas.</p>
-<p><b>Compartilhamento:</b> seu telefone só é visto por uma empresa depois que ela desbloqueia seu contato. Nome, idade, bairro, turno, habilidades e cursos ficam visíveis para empresas cadastradas.</p>
-<p><b>Seus direitos:</b> corrigir seus dados no perfil e excluir a conta a qualquer momento (botão "Excluir minha conta").</p>
-<p class="mut">Texto-modelo: revise com um profissional jurídico antes do lançamento.</p>
-<button class="btn" onclick="$('modal').innerHTML=''">Fechar</button></div></div>`;}
-function askNotif(){Notification.requestPermission().then(()=>render());}
-
-// ---------- candidato ----------
-async function saveProfile(){
-  const age=Number(D.age);
-  if(!D.name.trim()||!age||D.phone.replace(/\D/g,'').length<10)return toast('⚠️ Preencha nome, idade e telefone válido');
-  if(age<16||age>29)return toast('⚠️ A plataforma atende jovens de 16 a 29 anos');
-  const row={user_id:S.user.id,name:D.name.trim(),age,bairro:D.bairro,turno:D.turno,ifms:D.ifms,tags:D.tags,courses:D.courses,updated_at:new Date().toISOString()};
-  let r=await sb.from('candidates').upsert(row);if(r.error)return toast('⚠️ '+r.error.message);
-  r=await sb.from('candidate_contacts').upsert({user_id:S.user.id,phone:D.phone});if(r.error)return toast('⚠️ '+r.error.message);
-  S.me={...row};render();toast('✅ Perfil Ativo!');}
-function addCourse(){
-  const h=Number(C.hours);
-  if(!C.name.trim())return toast('⚠️ Informe o nome do curso');
-  if(!h||h<1||h>400)return toast('⚠️ Carga horária entre 1 e 400 h');
-  if(C.url&&!/^https:\/\/\S+$/.test(C.url.trim()))return toast('⚠️ O link deve começar com https://');
-  if(D.courses.length>=10)return toast('Limite de 10 cursos');
-  D.courses.push({name:C.name.trim().slice(0,80),hours:h,url:C.url.trim(),src:C.src});C=blankC();render();toast('Curso adicionado. Toque em Salvar Meu Perfil.');}
-function delCourse(i){D.courses.splice(i,1);render();}
-async function applyJob(id){
-  if(!S.me)return toast('⚠️ Salve seu perfil antes de se candidatar');
-  const r=await sb.from('applications').insert({job_id:id,candidate_id:S.user.id});
-  if(r.error)return toast(r.error.code==='23505'?'Você já se candidatou a esta vaga':'⚠️ '+r.error.message);
-  await loadData(false);render();toast('🚀 Candidatura enviada!');}
-
-// ---------- empresa ----------
-async function saveJob(){
-  if(!J.company.trim()||!J.cargo.trim())return toast('⚠️ Preencha empresa e cargo');
-  const row={company:J.company.trim(),bairro:J.bairro,cargo:J.cargo.trim(),turno:J.turno,tags:J.tags};
-  const r=S.editJob?await sb.from('jobs').update(row).eq('id',S.editJob):await sb.from('jobs').insert({...row,owner_id:S.user.id}).select().single();
-  if(r.error)return toast('⚠️ '+r.error.message);
-  toast(S.editJob?'✏️ Vaga atualizada!':'📢 Vaga publicada!');
-  if(!S.editJob&&r.data)S.selJob=r.data.id;
-  S.editJob=null;const c=J.company;J=blankJ();J.company=c;await loadData(false);render();}
-function editJob(id){const j=S.jobs.find(x=>x.id===id);if(!j)return;S.editJob=id;J={company:j.company,bairro:j.bairro,cargo:j.cargo,turno:j.turno,tags:[...j.tags]};render();scrollTo({top:0,behavior:'smooth'});}
-function cancelEdit(){S.editJob=null;J=blankJ();render();}
-async function toggleJob(id){const j=S.jobs.find(x=>x.id===id);const st=j.status==='aberta'?'encerrada':'aberta';
-  const r=await sb.from('jobs').update({status:st}).eq('id',id);if(r.error)return toast('⚠️ '+r.error.message);await loadData(false);render();toast(st==='encerrada'?'🔒 Vaga encerrada':'🟢 Vaga reaberta');}
-async function delJob(id){if(!confirm('Excluir esta vaga e suas candidaturas?'))return;
-  const r=await sb.from('jobs').delete().eq('id',id);if(r.error)return toast('⚠️ '+r.error.message);await loadData(false);render();toast('🗑️ Vaga excluída');}
-async function setAppStatus(id,st){const r=await sb.from('applications').update({status:st}).eq('id',id);if(r.error)return toast('⚠️ '+r.error.message);await loadData(false);render();toast('Status atualizado');}
-function pickJob(id){S.selJob=id;render();}
-async function unlock(id){
-  if(S.unlocks.has(id))return;
-  if(!S.freeUsed){const r=await sb.rpc('unlock_free',{p_candidate:id});if(r.error)return toast('⚠️ '+r.error.message);
-    S.freeUsed=true;S.unlocks.add(id);await loadPhones();render();return toast('🎉 Contato desbloqueado! (1/1 Franquia Grátis usada)');}
-  S.pix={id,loading:true};render();
-  try{const ses=(await sb.auth.getSession()).data.session;
-    const r=await fetch('/api/pix-create',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+ses.access_token},body:JSON.stringify({candidate_id:id})});
-    const j=await r.json();if(!r.ok)throw new Error(j.error||'Erro');
-    S.pix={id,...j};render();
-    pollT=setInterval(async()=>{await loadData(false);if(S.unlocks.has(id)){closePix();render();toast('✅ Pagamento confirmado! Contato liberado.');}},4000);
-  }catch(e){S.pix=null;render();toast('⚠️ '+e.message);}}
-function closePix(){clearInterval(pollT);S.pix=null;$('modal').innerHTML='';}
-function cancelPix(){closePix();render();}
-function copyPix(){navigator.clipboard.writeText(S.pix.qr_code).then(()=>toast('Código Pix copiado'));}
-
-// ---------- views ----------
-function vLogin(){
-  const m=AUTH.mode,d=S.sent;
-  const msg=d==='confirm'?'📧 Cadastro feito! Confirme seu e-mail pelo link que enviamos e depois entre com sua senha.':d==='reset'?'📧 Enviamos um link para você criar uma nova senha.':'';
-  return `<div class="card rounded-2xl p-5 shadow-sm space-y-3 mt-6">
-<h2 class="font-bold text-xl">${m==='signup'?'Criar conta':m==='reset'?'Recuperar senha':'Entrar no ConectaNav'}</h2>
-<p class="text-sm mut">Vagas do comércio e jovens talentos de Naviraí-MS.</p>
-${msg?`<div class="p-3 rounded-xl text-sm font-medium" style="background:#DCFCE7;color:#166534">${msg}</div>`:`${inp('E-mail',EMAIL,"EMAIL=this.value",'voce@email.com','email')}
-${m!=='reset'?inp('Senha',AUTH.pw,"AUTH.pw=this.value",'mínimo 8 caracteres','password'):''}
-${m==='signup'?inp('Repita a senha',AUTH.pw2,"AUTH.pw2=this.value",'','password'):''}
-<button class="btn" onclick="${m==='signup'?'signUp()':m==='reset'?'resetPw()':'signIn()'}">${m==='signup'?'Criar conta':m==='reset'?'Enviar link':'Entrar'}</button>`}
-<div class="flex justify-between text-sm font-medium" style="color:var(--brand)">${m==='login'?`<button onclick="authMode('signup')">Criar conta</button><button onclick="authMode('reset')">Esqueci a senha</button>`:`<button onclick="authMode('login')">← Voltar para entrar</button>`}</div></div>`;}
-function vNewPw(){return `<div class="card rounded-2xl p-5 shadow-sm space-y-3 mt-6"><h2 class="font-bold text-xl">Crie sua nova senha</h2>${inp('Nova senha',AUTH.pw,"AUTH.pw=this.value",'mínimo 8 caracteres','password')}${inp('Repita a senha',AUTH.pw2,"AUTH.pw2=this.value",'','password')}<button class="btn" onclick="setNewPw()">Salvar senha</button></div>`;}
-function vOnboard(){return `<div class="card rounded-2xl p-5 shadow-sm space-y-4 mt-6">
-<h2 class="font-bold text-xl">Como você vai usar o ConectaNav?</h2>
-<div class="grid grid-cols-2 gap-2">${['candidato','empresa'].map(r=>`<button onclick="OB.role='${r}';render()" class="chip rounded-xl p-3 text-sm font-semibold ${OB.role===r?'active':''}">${r==='candidato'?'🎓 Sou Candidato (16–29)':'🏪 Sou Empresa (PME)'}</button>`).join('')}</div>
-<label class="flex items-start gap-2 text-sm"><input type="checkbox" ${OB.consent?'checked':''} onchange="OB.consent=this.checked" class="mt-1"><span>Li e aceito a <a href="#" onclick="showPrivacy();return false" class="underline" style="color:var(--brand)">Política de Privacidade</a> e o tratamento dos meus dados.</span></label>
-<button class="btn" onclick="createProfile()">Continuar</button></div>`;}
-
-function ifmsBox(){
-  const cats=[...new Set(D.tags.map(t=>CAT[t]))];
-  return `<div class="card rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
-<h2 class="font-bold text-lg">🎓 Cursos Livres do IFMS</h2>
-<p class="text-sm mut">Gratuitos, online, de 20 a 60 horas, com certificado digital. Quem estuda se destaca para os lojistas.</p>
-<p class="text-sm">${cats.length?`Pelas suas habilidades, vale olhar: ${cats.map(c=>`<span class="tag">${esc(c)}</span>`).join(' ')} (use o filtro <b>Categoria</b> no catálogo).`:'Marque suas habilidades acima e sugerimos categorias de curso.'}</p>
-<div class="grid grid-cols-2 gap-2"><a class="btn" href="${IFMS}" target="_blank" rel="noopener">Ver catálogo</a><a class="btn2" href="${AVA}" target="_blank" rel="noopener">Acessar plataforma</a></div>
-<h3 class="font-semibold text-sm pt-1">Meus cursos concluídos</h3>
-${D.courses.map((c,i)=>`<div class="flex items-center justify-between gap-2 text-sm p-2 rounded-lg" style="background:var(--brand-light)"><span>📜 ${esc(c.name)} · ${esc(c.hours)}h · <span class="mut">${esc(c.src)}</span></span><button onclick="delCourse(${i})" class="text-xs" style="color:#991B1B">remover</button></div>`).join('')||'<p class="text-xs mut">Nenhum curso adicionado ainda.</p>'}
-<div class="grid sm:grid-cols-2 gap-2">${inp('Nome do curso',C.name,"upC('name',this.value)",'Ex: Atendimento ao Cliente')}${inp('Carga horária (h)',C.hours,"upC('hours',this.value)",'20','number')}
-${sel('Origem',FONTES,C.src,"upC('src',this.value)")}${inp('Link de verificação do certificado (opcional)',C.url,"upC('url',this.value)",'https://...','url')}</div>
-<button class="btn2" onclick="addCourse()">➕ Adicionar curso</button>
-<p class="text-xs mut">Os cursos são informados por você. O link de verificação do certificado permite que a empresa confirme a autenticidade.</p></div>`;}
-
-function jobCard(j){
-  const a=S.apps.find(x=>x.job_id===j.id),closed=j.status==='encerrada',have=S.me?S.me.tags:D.tags,miss=j.tags.filter(t=>!have.includes(t));
-  const st=a&&STAT_UI[a.status];
-  return `<div class="card rounded-2xl p-4 shadow-sm">
-<div class="flex items-start justify-between gap-2"><div><h3 class="font-semibold">${esc(j.cargo)}</h3><p class="text-sm mut">${esc(j.company)} · 📍 ${esc(j.bairro)} · 🕐 ${esc(j.turno)}</p></div>
-<span class="text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0" style="background:${closed?'#FEE2E2':'#DCFCE7'};color:${closed?'#991B1B':'#166534'}">${closed?'🔒 Encerrada':'🟢 Aberta'}</span></div>
-<div class="flex flex-wrap gap-1.5 mt-2.5">${j.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
-${miss.length&&!a?`<p class="text-xs mt-2.5 mut">📚 Para se destacar nesta vaga: ${esc(miss.join(', '))}. <a href="${IFMS}" target="_blank" rel="noopener" class="underline" style="color:var(--brand)">Veja cursos do IFMS</a></p>`:''}
-${a?`<div class="mt-3 text-xs font-semibold px-3 py-2 rounded-lg text-center" style="background:${st[0]};color:${st[1]}">${st[2]}</div>`
-:closed?`<button disabled class="btn mt-3 opacity-60" style="background:var(--border);color:var(--muted)">Inscrições Encerradas</button>`
-:`<button class="btn mt-3" onclick="applyJob('${j.id}')">Candidatar-se em 1 Clique</button>`}</div>`;}
-
-function vCand(){return `<div class="space-y-5">
-<div class="card rounded-2xl p-4 sm:p-5 shadow-sm">
-<div class="flex items-center justify-between mb-3 gap-2 flex-wrap"><h2 class="font-bold text-lg">👤 Meu Perfil</h2>
-${S.me?'<span class="tag" style="background:#DCFCE7;color:#166534">✅ Perfil Ativo</span>':'<span class="text-xs mut">Cadastro rápido, sem PDF</span>'}</div>
-<div class="grid sm:grid-cols-2 gap-3">
-${inp('Nome completo',D.name,"upD('name',this.value)",'Seu nome')}${inp('Idade',D.age,"upD('age',this.value)",'Ex: 19','number')}
-<div><label class="lb">📞 Telefone / WhatsApp</label><input type="tel" value="${esc(D.phone)}" oninput="maskPhone(this)" placeholder="(67) 99999-9999" class="fi"></div>
-${sel('📍 Bairro em Naviraí',BAIRROS,D.bairro,"setD('bairro',this.value)")}
-<div class="sm:col-span-2"><label class="lb">🕐 Turno disponível</label><div class="flex flex-wrap gap-1.5 mt-1.5">${TURNOS.map(t=>chip(t,D.turno===t,`setD('turno','${t}')`)).join('')}</div></div></div>
-<label class="flex items-start gap-2.5 mt-4 p-3 rounded-xl cursor-pointer" style="background:var(--brand-light)"><input type="checkbox" ${D.ifms?'checked':''} onchange="upD('ifms',this.checked)" class="mt-0.5 w-4 h-4"><span class="text-sm font-medium">🎓 Sou estudante do IFMS ou possuo cursos do Sistema S</span></label>
-<div class="mt-4"><label class="lb">Habilidades / Tags</label><div class="flex flex-wrap gap-1.5 mt-1.5">${SKILLS.map(s=>chip(s,D.tags.includes(s),`tog('D','${s}')`)).join('')}</div></div>
-<button class="btn mt-5" onclick="saveProfile()">💾 Salvar Meu Perfil</button>
-${'Notification' in window&&Notification.permission==='default'?'<button class="btn2 mt-2" onclick="askNotif()">🔔 Ativar alertas de candidatura</button>':''}</div>
-${ifmsBox()}
-<div><h2 class="font-bold text-lg mb-3">💼 Vagas Abertas em Naviraí</h2><div class="space-y-3">${S.jobs.map(jobCard).join('')||'<p class="text-sm mut">Nenhuma vaga publicada ainda.</p>'}</div></div></div>`;}
-
-function candRow(c,j){
-  const sc=score(c,j),un=S.unlocks.has(c.user_id),a=S.apps.find(x=>x.job_id===j.id&&x.candidate_id===c.user_id);
-  const col=sc>=70?['#DCFCE7','#166534']:sc>=40?['#FEF3C7','#92400E']:['#F3F4F6','#6B7280'];
-  const msg=encodeURIComponent(`Olá ${c.name}! Vi seu perfil no ConectaNav e gostaria de agendar uma entrevista para a vaga de ${j.cargo}. Podemos conversar?`);
-  return `<div class="rounded-xl p-3.5" style="border:1px solid var(--border)">
-<div class="flex items-start justify-between gap-3"><div><div class="flex items-center gap-2 flex-wrap"><h4 class="font-semibold">${esc(c.name)}</h4>
-${c.ifms?'<span class="tag text-[10px] font-bold">🎓 IFMS/Sistema S</span>':''}${a?'<span class="tag text-[10px] font-bold" style="background:#FEF3C7;color:#92400E">📥 Candidatou-se</span>':''}</div>
-<p class="text-xs mut mt-0.5">${esc(c.age)} anos · 📍 ${esc(c.bairro)} · 🕐 ${esc(c.turno)}</p></div>
-<div class="text-center shrink-0 px-2.5 py-1.5 rounded-xl" style="background:${col[0]};color:${col[1]}"><div class="text-lg font-extrabold leading-none">${sc}%</div><div class="text-[9px] font-medium mt-0.5">MATCH</div></div></div>
-<div class="flex flex-wrap gap-1.5 mt-2.5">${c.tags.map(t=>`<span class="tag ${j.tags.includes(t)?'font-semibold':''}">${esc(t)}</span>`).join('')}</div>
-${c.courses.length?`<div class="mt-2 text-xs space-y-0.5"><div class="font-semibold">📜 Cursos informados (${c.courses.length})</div>${c.courses.slice(0,4).map(k=>`<div class="mut">• ${esc(k.name)} (${esc(k.hours)}h, ${esc(k.src)}) ${/^https:\/\//.test(k.url||'')?`<a href="${esc(k.url)}" target="_blank" rel="noopener nofollow" class="underline" style="color:var(--brand)">verificar</a>`:''}</div>`).join('')}</div>`:''}
-${a?`<div class="mt-2"><label class="lb">Status da candidatura</label><select class="fi" onchange="setAppStatus('${a.id}',this.value)">${STAT.map(s=>`<option ${s===a.status?'selected':''}>${s}</option>`).join('')}</select></div>`:''}
-<div class="mt-3">${un&&S.phones[c.user_id]?`<a class="btn" style="background:#25D366" href="https://wa.me/${esc(waNum(S.phones[c.user_id]))}?text=${msg}" target="_blank" rel="noopener">💬 Iniciar Conversa no WhatsApp</a>`
-:`<button class="btn2" onclick="unlock('${c.user_id}')">🔒 Desbloquear Contato</button>`}</div></div>`;}
-
-function vEmp(){
-  const own=S.jobs.filter(j=>j.owner_id===S.user.id),job=own.find(j=>j.id===S.selJob),ed=!!S.editJob;
-  const ranked=job?S.cands.map(c=>({c,s:score(c,job)})).sort((a,b)=>b.s-a.s):[];
-  return `<div class="space-y-5">
-<div class="card rounded-2xl p-4 sm:p-5 shadow-sm"><h2 class="font-bold text-lg mb-3">${ed?'✏️ Editar Vaga':'📢 Publicar Nova Vaga'}</h2>
-<div class="grid sm:grid-cols-2 gap-3">${inp('Nome da Empresa',J.company,"upJ('company',this.value)",'Ex: Mercado Bom Preço')}${inp('Cargo',J.cargo,"upJ('cargo',this.value)",'Ex: Atendente de Loja')}
-${sel('📍 Bairro da Loja',BAIRROS,J.bairro,"setJ('bairro',this.value)")}
-<div><label class="lb">🕐 Turno Exigido</label><div class="flex flex-wrap gap-1.5 mt-1.5">${TURNOS.map(t=>chip(t,J.turno===t,`setJ('turno','${t}')`)).join('')}</div></div></div>
-<div class="mt-4"><label class="lb">Tags Exigidas</label><div class="flex flex-wrap gap-1.5 mt-1.5">${SKILLS.map(s=>chip(s,J.tags.includes(s),`tog('J','${s}')`)).join('')}</div></div>
-<div class="flex gap-2 mt-5"><button class="btn" onclick="saveJob()">${ed?'💾 Salvar Alterações':'📢 Publicar Vaga'}</button>${ed?'<button class="btn2" onclick="cancelEdit()">Cancelar</button>':''}</div></div>
-<div class="card rounded-2xl p-4 sm:p-5 shadow-sm"><h2 class="font-bold text-lg mb-3">🗂️ Minhas Vagas</h2><div class="space-y-2">
-${own.map(j=>`<div class="rounded-xl p-3 flex items-center justify-between gap-2 flex-wrap" style="border:1px solid var(--border)"><div class="text-sm"><b>${esc(j.cargo)}</b> <span class="mut">· ${esc(j.bairro)} · ${j.status==='aberta'?'🟢 Aberta':'🔒 Encerrada'}</span></div>
-<div class="flex gap-3 text-xs font-semibold"><button onclick="editJob('${j.id}')" style="color:var(--brand)">Editar</button><button onclick="toggleJob('${j.id}')" style="color:var(--brand)">${j.status==='aberta'?'Encerrar':'Reabrir'}</button><button onclick="delJob('${j.id}')" style="color:#991B1B">Excluir</button></div></div>`).join('')||'<p class="text-sm mut">Você ainda não publicou vagas.</p>'}</div></div>
-<div class="card rounded-2xl p-4 sm:p-5 shadow-sm"><div class="flex items-center justify-between mb-3 flex-wrap gap-2"><h2 class="font-bold text-lg">🎯 Painel de Triagem</h2>
-<span class="tag" style="background:${S.freeUsed?'#F3F4F6':'#DCFCE7'};color:${S.freeUsed?'#6B7280':'#166534'}">${S.freeUsed?'🎁 Franquia grátis usada':'🎁 1/1 Franquia Grátis disponível'}</span></div>
-${own.length?`<select onchange="pickJob(this.value)" class="fi mb-4">${own.map(j=>`<option value="${j.id}" ${j.id===S.selJob?'selected':''}>${esc(j.cargo)} — ${esc(j.company)}</option>`).join('')}</select>
-<div class="space-y-3">${ranked.map(r=>candRow(r.c,job)).join('')||'<p class="text-sm mut">Ainda não há candidatos cadastrados.</p>'}</div>`:'<p class="text-sm mut">Publique uma vaga para ver candidatos ordenados por Match Score.</p>'}</div></div>`;}
-
-function pixModal(){
-  if(!S.pix)return '';const c=S.cands.find(x=>x.user_id===S.pix.id),p=S.pix;
-  return `<div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.5)"><div class="card rounded-2xl p-5 w-full max-w-sm shadow-xl text-center">
-<h3 class="font-bold text-lg">Desbloquear Contato</h3>
-<p class="text-sm mut mt-1.5">Sua franquia grátis acabou. No <b>Pay-per-Hire</b> você paga só para liberar o contato de ${esc(c?c.name:'candidato')}.</p>
-<div class="my-3 py-2 rounded-xl" style="background:var(--brand-light)"><div class="text-2xl font-extrabold" style="color:var(--brand)">R$ 15,00</div><div class="text-xs mut">via Pix, liberação automática</div></div>
-${p.loading?'<p class="text-sm mut py-4">Gerando Pix…</p>':`<img alt="QR Code Pix" class="mx-auto w-44 h-44" src="data:image/png;base64,${esc(p.qr_base64)}"><button class="btn2 mt-2" onclick="copyPix()">Copiar código Pix</button><p class="text-xs mut mt-2">Aguardando pagamento… esta tela fecha sozinha quando confirmar.</p>`}
-<button class="mt-3 text-sm mut" onclick="cancelPix()">Cancelar</button></div></div>`;}
-
-function render(){
-  $('roleBadge').textContent=S.role?(S.role==='candidato'?'🎓 Candidato':'🏪 Empresa'):'';
-  let h;
-  if(!sb)h='<div class="card rounded-2xl p-5 mt-6"><h2 class="font-bold">Configuração pendente</h2><p class="text-sm mut mt-1">Preencha SUPABASE_URL e SUPABASE_ANON_KEY em <code>config.js</code> (veja o README).</p></div>';
-  else if(S.loading)h='<p class="text-center mut mt-10">Carregando…</p>';
-  else if(S.user&&S.recovery)h=vNewPw();
-  else if(!S.user)h=vLogin();
-  else if(!S.role)h=vOnboard();
-  else h=(S.role==='candidato'?vCand():vEmp())+`<div class="flex justify-center gap-4 text-xs mut mt-8 flex-wrap"><a href="#" onclick="showPrivacy();return false" class="underline">Privacidade</a><button onclick="logout()" class="underline">Sair</button><button onclick="deleteAccount()" class="underline" style="color:#991B1B">Excluir minha conta</button></div>`;
-  $('app').innerHTML=h;
-  if(S.pix)$('modal').innerHTML=pixModal();
+function addCustomTag(o) {
+  const inpEl = $(`tagInp_${o}`);
+  if (!inpEl) return;
+  const val = inpEl.value.trim();
+  if (!val) return;
+  const arr = (o === 'D' ? D : J).tags;
+  if (!arr.includes(val)) {
+    arr.push(val);
+  }
+  inpEl.value = '';
+  const sg = $(`tagSuggest_${o}`);
+  if (sg) sg.classList.add('hidden');
+  render();
 }
 
-if(sb){
-  sb.auth.onAuthStateChange((_e,ses)=>{const u=ses&&ses.user,rec=_e==='PASSWORD_RECOVERY';
-    if(u&&S.user&&u.id===S.user.id){if(rec){S.recovery=true;render();}return;}
-    if(u){resetS();S.user=u;if(rec)S.recovery=true;setTimeout(loadAll,0);}else{resetS();S.loading=false;}render();});
-}else{S.loading=false;render();}
-if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+function onTagInput(o, val) {
+  const sg = $(`tagSuggest_${o}`);
+  if (!sg) return;
+  const term = normalizeText(val);
+  if (!term) {
+    sg.classList.add('hidden');
+    return;
+  }
+  const all = getAllKnownSkills();
+  const filtered = all.filter(s => normalizeText(s).includes(term)).slice(0, 8);
+  if (!filtered.length) {
+    sg.classList.add('hidden');
+    return;
+  }
+  sg.innerHTML = filtered.map(s => `
+    <div class="px-3 py-2 text-xs sm:text-sm hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer flex justify-between items-center"
+         onclick="pickSuggestedTag('${o}','${esc(s)}')">
+      <span>${esc(s)}</span>
+      <span class="text-[10px] text-blue-600 font-bold">+ Selecionar</span>
+    </div>
+  `).join('');
+  sg.classList.remove('hidden');
+}
+
+function pickSuggestedTag(o, s) {
+  const arr = (o === 'D' ? D : J).tags;
+  if (!arr.includes(s)) arr.push(s);
+  const inpEl = $(`tagInp_${o}`);
+  if (inpEl) inpEl.value = '';
+  const sg = $(`tagSuggest_${o}`);
+  if (sg) sg.classList.add('hidden');
+  render();
+}
+
+// ==================== DADOS & SUPABASE ====================
+async function loadAll() {
+  const uid = S.user.id;
+  const p = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
+  S.role = p.data ? p.data.role : null;
+  S.freeUsed = !!(p.data && p.data.free_unlock_used);
+  if (S.role) {
+    await loadData(true);
+    subscribe();
+    // Tab inicial coerente
+    if (S.role === 'candidato') {
+      S.tab = S.me ? 'vagas' : 'cadastro';
+    } else {
+      const own = S.jobs.filter(j => j.owner_id === uid);
+      S.tab = own.length ? 'triagem' : 'vagas';
+    }
+  }
+  S.loading = false;
+  render();
+}
+
+async function loadData(first) {
+  const uid = S.user.id;
+  S.jobs = (await sb.from('jobs').select('*').order('created_at', { ascending: false })).data || [];
+  S.jobs.forEach(j => j.tags = okTags(j.tags));
+
+  if (S.role === 'candidato') {
+    const old = Object.fromEntries(S.apps.map(a => [a.id, a.status]));
+    S.apps = (await sb.from('applications').select('*').eq('candidate_id', uid)).data || [];
+    if (!first) {
+      S.apps.forEach(a => {
+        if (old[a.id] && old[a.id] !== a.status) {
+          const j = S.jobs.find(x => x.id === a.job_id);
+          notify('Candidatura atualizada', (j ? j.cargo + ': ' : '') + a.status);
+        }
+      });
+    }
+    if (first) {
+      const me = (await sb.from('candidates').select('*').eq('user_id', uid).maybeSingle()).data;
+      if (me) {
+        me.tags = okTags(me.tags);
+        S.me = me;
+        const ph = (await sb.from('candidate_contacts').select('phone').eq('user_id', uid).maybeSingle()).data;
+        const areaVal = me.area || 'Ciências Exatas e da Terra';
+        const subs = CNPQ_AREAS[areaVal] || [];
+        D = {
+          name: me.name || '',
+          age: me.age || '',
+          phone: ph ? ph.phone : '',
+          bairro: me.bairro || 'Centro',
+          turno: me.turno || 'Manhã',
+          area: areaVal,
+          subarea: me.subarea || subs[0] || '',
+          customSubarea: me.custom_subarea || '',
+          tags: [...me.tags],
+          courses: Array.isArray(me.courses) ? me.courses : []
+        };
+      }
+    }
+  } else {
+    S.cands = ((await sb.from('candidates').select('*')).data || []).map(c => ({
+      ...c,
+      tags: okTags(c.tags),
+      courses: Array.isArray(c.courses) ? c.courses : []
+    }));
+    S.apps = (await sb.from('applications').select('*')).data || [];
+    S.unlocks = new Set(((await sb.from('unlocks').select('candidate_id').eq('company_id', uid)).data || []).map(x => x.candidate_id));
+    await loadPhones();
+    const own = S.jobs.filter(j => j.owner_id === uid);
+    if (!own.find(j => j.id === S.selJob)) S.selJob = own[0] ? own[0].id : null;
+    if (first && own[0]) J.company = own[0].company;
+  }
+}
+
+async function loadPhones() {
+  const ids = [...S.unlocks];
+  if (!ids.length) return;
+  const r = (await sb.from('candidate_contacts').select('user_id,phone').in('user_id', ids)).data || [];
+  r.forEach(x => S.phones[x.user_id] = x.phone);
+}
+
+function subscribe() {
+  if (S.ch) return;
+  const f = async () => {
+    await loadData(false);
+    if (S.pix && S.unlocks.has(S.pix.id)) {
+      closePix();
+      toast('✅ Pagamento confirmado! Contato liberado.');
+    }
+    render();
+  };
+  S.ch = sb.channel('cn')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, f)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'unlocks' }, f)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, f)
+    .subscribe();
+}
+
+// ==================== AUTH / LGPD ====================
+let AUTH = { mode: 'login', pw: '', pw2: '' };
+const okEmail = () => /^\S+@\S+\.\S+$/.test(EMAIL);
+function authMode(m) { AUTH.mode = m; AUTH.pw = ''; AUTH.pw2 = ''; S.sent = false; render(); }
+
+async function signIn() {
+  if (!okEmail() || !AUTH.pw) return toast('⚠️ Informe e-mail e senha');
+  const r = await sb.auth.signInWithPassword({ email: EMAIL, password: AUTH.pw });
+  if (r.error) return toast('⚠️ ' + (r.error.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos' : r.error.message));
+  AUTH.pw = '';
+}
+
+async function signUp() {
+  if (!okEmail()) return toast('⚠️ Informe um e-mail válido');
+  if (AUTH.pw.length < 8) return toast('⚠️ A senha precisa ter ao menos 8 caracteres');
+  if (AUTH.pw !== AUTH.pw2) return toast('⚠️ As senhas não conferem');
+  const r = await sb.auth.signUp({ email: EMAIL, password: AUTH.pw, options: { emailRedirectTo: location.origin } });
+  if (r.error) return toast('⚠️ ' + r.error.message);
+  AUTH.pw = AUTH.pw2 = '';
+  if (!r.data.session) { S.sent = 'confirm'; render(); }
+}
+
+async function resetPw() {
+  if (!okEmail()) return toast('⚠️ Informe seu e-mail');
+  const r = await sb.auth.resetPasswordForEmail(EMAIL, { redirectTo: location.origin });
+  if (r.error) return toast('⚠️ ' + r.error.message);
+  S.sent = 'reset';
+  render();
+}
+
+async function setNewPw() {
+  if (AUTH.pw.length < 8 || AUTH.pw !== AUTH.pw2) return toast('⚠️ Use 8+ caracteres e repita a mesma senha');
+  const r = await sb.auth.updateUser({ password: AUTH.pw });
+  if (r.error) return toast('⚠️ ' + r.error.message);
+  S.recovery = false;
+  AUTH.pw = AUTH.pw2 = '';
+  render();
+  toast('✅ Senha alterada!');
+}
+
+async function createProfile() {
+  if (!OB.consent) return toast('⚠️ É preciso aceitar a Política de Privacidade');
+  const r = await sb.from('profiles').insert({ id: S.user.id, role: OB.role });
+  if (r.error) return toast('⚠️ ' + r.error.message);
+  S.role = OB.role;
+  S.loading = true;
+  render();
+  await loadData(true);
+  subscribe();
+  S.tab = S.role === 'candidato' ? 'cadastro' : 'vagas';
+  S.loading = false;
+  render();
+}
+
+async function logout() {
+  if (S.ch) { sb.removeChannel(S.ch); }
+  await sb.auth.signOut();
+}
+
+async function deleteAccount() {
+  if (!confirm('Excluir sua conta e TODOS os seus dados? Isso não pode ser desfeito.')) return;
+  const r = await sb.rpc('delete_my_account');
+  if (r.error) return toast('⚠️ ' + r.error.message);
+  await logout();
+  toast('Conta excluída.');
+}
+
+function showPrivacy() {
+  $('modal').innerHTML = `<div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.5)"><div class="card rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-auto text-sm space-y-2">
+<h3 class="font-bold text-lg">Política de Privacidade</h3>
+<p><b>Dados coletados:</b> nome, idade, bairro, turno, grande área do CNPq/CAPES, curso/subárea, habilidades/tags, cursos informados, telefone e e-mail de acesso.</p>
+<p><b>Finalidade:</b> conectar candidatos e empresas de Naviraí-MS para vagas de trabalho e oportunidades de estágio/emprego.</p>
+<p><b>Compartilhamento:</b> seu telefone só é visto por uma empresa depois que ela desbloqueia seu contato. Nome, idade, bairro, turno, área e habilidades ficam visíveis para lojistas e empresas cadastradas.</p>
+<p><b>Seus direitos:</b> você pode editar suas informações no Meu Perfil e excluir permanentemente sua conta a qualquer momento.</p>
+<button class="btn mt-4" onclick="$('modal').innerHTML=''">Fechar</button></div></div>`;
+}
+
+function askNotif() {
+  Notification.requestPermission().then(() => render());
+}
+
+// ==================== CANDIDATO: AÇÕES ====================
+async function saveProfile() {
+  const age = Number(D.age);
+  if (!D.name.trim() || !age || D.phone.replace(/\D/g, '').length < 10) {
+    return toast('⚠️ Preencha nome, idade e telefone válido');
+  }
+  if (age < 16 || age > 29) {
+    return toast('⚠️ A plataforma atende jovens de 16 a 29 anos');
+  }
+
+  const row = {
+    user_id: S.user.id,
+    name: D.name.trim(),
+    age,
+    bairro: D.bairro,
+    turno: D.turno,
+    area: D.area,
+    subarea: D.subarea,
+    custom_subarea: D.customSubarea || null,
+    tags: D.tags,
+    courses: D.courses,
+    updated_at: new Date().toISOString()
+  };
+
+  let r = await sb.from('candidates').upsert(row);
+  if (r.error) {
+    // Se a coluna area ou subarea não existirem no Supabase, tenta salvar sem elas e avisa
+    if (r.error.message && (r.error.message.includes('column') || r.error.message.includes('area'))) {
+      delete row.area;
+      delete row.subarea;
+      delete row.custom_subarea;
+      r = await sb.from('candidates').upsert(row);
+      toast('ℹ️ Execute migration_v2.sql no Supabase para salvar sua Área acadêmica');
+    } else if (r.error.message && r.error.message.includes('check constraint')) {
+      return toast('⚠️ Execute migration_v2.sql no SQL Editor do Supabase para destravar novas tags!');
+    } else {
+      return toast('⚠️ ' + r.error.message);
+    }
+  }
+
+  const r2 = await sb.from('candidate_contacts').upsert({ user_id: S.user.id, phone: D.phone });
+  if (r2.error) return toast('⚠️ ' + r2.error.message);
+
+  S.me = { ...row };
+  render();
+  toast('✅ Perfil salvo com sucesso!');
+}
+
+function addCourse() {
+  const h = Number(C.hours);
+  if (!C.name.trim()) return toast('⚠️ Informe o nome do curso');
+  if (!h || h < 1 || h > 400) return toast('⚠️ Carga horária entre 1 e 400 h');
+  if (C.url && !/^https:\/\/\S+$/.test(C.url.trim())) return toast('⚠️ O link deve começar com https://');
+  if (D.courses.length >= 10) return toast('Limite de 10 cursos');
+  D.courses.push({ name: C.name.trim().slice(0, 80), hours: h, url: C.url.trim(), src: C.src });
+  C = blankC();
+  render();
+  toast('Curso adicionado. Lembre-se de salvar seu perfil!');
+}
+
+function delCourse(i) {
+  D.courses.splice(i, 1);
+  render();
+}
+
+async function applyJob(id) {
+  if (!S.me) return toast('⚠️ Salve seu perfil antes de se candidatar');
+  const r = await sb.from('applications').insert({ job_id: id, candidate_id: S.user.id });
+  if (r.error) return toast(r.error.code === '23505' ? 'Você já se candidatou a esta vaga' : '⚠️ ' + r.error.message);
+  await loadData(false);
+  render();
+  toast('🚀 Candidatura enviada com sucesso!');
+}
+
+// ==================== EMPRESA: AÇÕES ====================
+async function saveJob() {
+  if (!J.company.trim() || !J.cargo.trim()) return toast('⚠️ Preencha empresa e cargo');
+  const row = {
+    company: J.company.trim(),
+    bairro: J.bairro,
+    cargo: J.cargo.trim(),
+    turno: J.turno,
+    area: J.area || null,
+    tags: J.tags
+  };
+
+  let r = S.editJob
+    ? await sb.from('jobs').update(row).eq('id', S.editJob)
+    : await sb.from('jobs').insert({ ...row, owner_id: S.user.id }).select().single();
+
+  if (r.error) {
+    if (r.error.message && r.error.message.includes('column') && r.error.message.includes('area')) {
+      delete row.area;
+      r = S.editJob
+        ? await sb.from('jobs').update(row).eq('id', S.editJob)
+        : await sb.from('jobs').insert({ ...row, owner_id: S.user.id }).select().single();
+    } else if (r.error.message && r.error.message.includes('check constraint')) {
+      return toast('⚠️ Execute migration_v2.sql no SQL Editor do Supabase para destravar novas tags!');
+    } else {
+      return toast('⚠️ ' + r.error.message);
+    }
+  }
+
+  toast(S.editJob ? '✏️ Vaga atualizada!' : '📢 Vaga publicada com sucesso!');
+  if (!S.editJob && r.data) S.selJob = r.data.id;
+  S.editJob = null;
+  const c = J.company;
+  J = blankJ();
+  J.company = c;
+  await loadData(false);
+  render();
+}
+
+function editJob(id) {
+  const j = S.jobs.find(x => x.id === id);
+  if (!j) return;
+  S.editJob = id;
+  J = {
+    company: j.company,
+    bairro: j.bairro,
+    cargo: j.cargo,
+    turno: j.turno,
+    area: j.area || '',
+    tags: [...j.tags]
+  };
+  S.tab = 'vagas';
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelEdit() {
+  S.editJob = null;
+  J = blankJ();
+  render();
+}
+
+async function toggleJob(id) {
+  const j = S.jobs.find(x => x.id === id);
+  const st = j.status === 'aberta' ? 'encerrada' : 'aberta';
+  const r = await sb.from('jobs').update({ status: st }).eq('id', id);
+  if (r.error) return toast('⚠️ ' + r.error.message);
+  await loadData(false);
+  render();
+  toast(st === 'encerrada' ? '🔒 Vaga encerrada' : '🟢 Vaga reaberta');
+}
+
+async function delJob(id) {
+  if (!confirm('Excluir esta vaga e todas as candidaturas relacionadas?')) return;
+  const r = await sb.from('jobs').delete().eq('id', id);
+  if (r.error) return toast('⚠️ ' + r.error.message);
+  await loadData(false);
+  render();
+  toast('🗑️ Vaga excluída');
+}
+
+async function setAppStatus(id, st) {
+  const r = await sb.from('applications').update({ status: st }).eq('id', id);
+  if (r.error) return toast('⚠️ ' + r.error.message);
+  await loadData(false);
+  render();
+  toast('Status atualizado');
+}
+
+function pickJob(id) {
+  S.selJob = id;
+  render();
+}
+
+async function unlock(id) {
+  if (S.unlocks.has(id)) return;
+  if (!S.freeUsed) {
+    const r = await sb.rpc('unlock_free', { p_candidate: id });
+    if (r.error) return toast('⚠️ ' + r.error.message);
+    S.freeUsed = true;
+    S.unlocks.add(id);
+    await loadPhones();
+    render();
+    return toast('🎉 Contato desbloqueado! (1/1 Franquia Grátis usada)');
+  }
+  S.pix = { id, loading: true };
+  render();
+  try {
+    const ses = (await sb.auth.getSession()).data.session;
+    const r = await fetch('/api/pix-create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ses.access_token },
+      body: JSON.stringify({ candidate_id: id })
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Erro');
+    S.pix = { id, ...j };
+    render();
+    pollT = setInterval(async () => {
+      await loadData(false);
+      if (S.unlocks.has(id)) {
+        closePix();
+        render();
+        toast('✅ Pagamento confirmado! Contato liberado.');
+      }
+    }, 4000);
+  } catch (e) {
+    S.pix = null;
+    render();
+    toast('⚠️ ' + e.message);
+  }
+}
+
+function closePix() {
+  clearInterval(pollT);
+  S.pix = null;
+  $('modal').innerHTML = '';
+}
+
+function cancelPix() {
+  closePix();
+  render();
+}
+
+function copyPix() {
+  navigator.clipboard.writeText(S.pix.qr_code).then(() => toast('Código Pix copiado!'));
+}
+
+// ==================== COMPONENTES: TAG INPUT ====================
+function renderTagInput(o) {
+  const currentTags = (o === 'D' ? D : J).tags;
+  const quickSkills = DEFAULT_SKILLS.slice(0, 16);
+
+  return `
+    <div class="mt-4 space-y-2">
+      <div class="flex items-center justify-between">
+        <label class="lb">Habilidades & Competências (Tags)</label>
+        <span class="text-[11px] mut">${currentTags.length} selecionada(s)</span>
+      </div>
+
+      <!-- Campo de digitação de tag manual com autocomplete -->
+      <div class="relative">
+        <div class="flex gap-2">
+          <input id="tagInp_${o}" type="text" placeholder="Digite uma tag (ex: Vendas, Excel, Sistemas Fotovoltaicos...)"
+                 class="fi !mt-0 flex-1"
+                 oninput="onTagInput('${o}', this.value)"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTag('${o}')}">
+          <button type="button" onclick="addCustomTag('${o}')" class="btn shrink-0 !w-auto px-4 !py-2 text-xs sm:text-sm">
+            ➕ Adicionar
+          </button>
+        </div>
+        <div id="tagSuggest_${o}" class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto hidden"></div>
+      </div>
+
+      <!-- Tags atualmente selecionadas com botão de remover -->
+      <div class="min-h-[42px] p-2 rounded-xl bg-slate-50 dark:bg-slate-900/60 border flex flex-wrap gap-1.5 items-center">
+        ${currentTags.length ? currentTags.map(t => `
+          <span class="tag inline-flex items-center gap-1 font-medium bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+            ${esc(t)}
+            <button type="button" onclick="delTag('${o}','${esc(t)}')" class="hover:text-red-600 font-bold ml-1 text-sm leading-none" title="Remover tag">×</button>
+          </span>
+        `).join('') : '<span class="text-xs mut italic px-1">Nenhuma tag adicionada ainda. Digite acima ou clique nas sugestões abaixo.</span>'}
+      </div>
+
+      <!-- Sugestões rápidas mais procuradas -->
+      <div>
+        <p class="text-[11px] font-semibold text-gray-500 mb-1.5">⚡ Sugestões frequentes de Naviraí (clique para alternar):</p>
+        <div class="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1">
+          ${quickSkills.map(s => chip(s, currentTags.includes(s), `tog('${o}','${s}')`)).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== CANDIDATO: TELAS INDIVIDUAIS ====================
+
+// 1. TELA: MEU PERFIL (CADASTRO)
+function vCandProfile() {
+  const currentArea = D.area || 'Ciências Exatas e da Terra';
+  const subareas = CNPQ_AREAS[currentArea] || [];
+  const isCustom = D.subarea.startsWith('Outro');
+
+  return `
+    <div class="space-y-6">
+      <div class="card rounded-2xl p-5 shadow-xs">
+        <div class="flex items-center justify-between mb-4 gap-2 flex-wrap pb-3 border-b">
+          <div>
+            <h2 class="font-bold text-xl flex items-center gap-2">👤 Cadastro & Meu Perfil</h2>
+            <p class="text-xs mut mt-0.5">Mantenha seus dados atualizados para aumentar suas chances nas vagas.</p>
+          </div>
+          ${S.me ? '<span class="tag font-bold" style="background:#DCFCE7;color:#166534">✅ Perfil Ativo</span>' : '<span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">⚠️ Perfil Incompleto</span>'}
+        </div>
+
+        <!-- Dados Pessoais Básicos -->
+        <div class="grid sm:grid-cols-2 gap-3.5">
+          ${inp('Nome completo', D.name, "upD('name',this.value)", 'Ex: Maria Silva')}
+          ${inp('Idade (16 a 29 anos)', D.age, "upD('age',this.value)", 'Ex: 19', 'number')}
+          <div>
+            <label class="lb">📞 Telefone / WhatsApp</label>
+            <input type="tel" value="${esc(D.phone)}" oninput="maskPhone(this)" placeholder="(67) 99999-9999" class="fi">
+            <span class="text-[10px] mut">Seu contato só fica visível após autorização/desbloqueio da empresa.</span>
+          </div>
+          ${sel('📍 Bairro em Naviraí', BAIRROS, D.bairro, "setD('bairro',this.value)")}
+          <div class="sm:col-span-2">
+            <label class="lb">🕐 Turno disponível</label>
+            <div class="flex flex-wrap gap-1.5 mt-1.5">
+              ${TURNOS.map(t => chip(t, D.turno === t, `setD('turno','${t}')`)).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Área Acadêmica e Científica: Tabela CNPq / CAPES -->
+        <div class="mt-6 pt-5 border-t">
+          <div class="mb-3">
+            <h3 class="font-bold text-base flex items-center gap-2">
+              <span>🏛️ Área Acadêmica & Formação</span>
+              <span class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded bg-blue-100 text-blue-700">Padrão CNPq / CAPES</span>
+            </h3>
+            <p class="text-xs mut">Indique sua Grande Área de formação ou interesse acadêmico/técnico para facilitar o match de vagas.</p>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3.5">
+            <div>
+              <label class="lb">Grande Área do Conhecimento</label>
+              <select onchange="onAreaChange(this.value)" class="fi">
+                ${Object.keys(CNPQ_AREAS).map(area => `
+                  <option value="${esc(area)}" ${area === currentArea ? 'selected' : ''}>${esc(area)}</option>
+                `).join('')}
+              </select>
+            </div>
+
+            <div>
+              <label class="lb">Subárea / Curso de Interesse</label>
+              <select onchange="setD('subarea', this.value)" class="fi">
+                ${subareas.map(sub => `
+                  <option value="${esc(sub)}" ${sub === D.subarea ? 'selected' : ''}>${esc(sub)}</option>
+                `).join('')}
+              </select>
+            </div>
+
+            ${isCustom ? `
+              <div class="sm:col-span-2">
+                ${inp('Especifique o nome do seu curso / especialidade', D.customSubarea || '', "upD('customSubarea', this.value)", 'Ex: Técnico em Agropecuária, Engenharia de Software...')}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+
+        <!-- Habilidades e Tags -->
+        <div class="mt-6 pt-5 border-t">
+          ${renderTagInput('D')}
+        </div>
+
+        <!-- Botão Salvar Perfil -->
+        <div class="mt-6 pt-4 border-t flex flex-col sm:flex-row gap-2">
+          <button class="btn flex-1 py-3 text-base shadow-sm" onclick="saveProfile()">💾 Salvar Meu Perfil</button>
+          ${'Notification' in window && Notification.permission === 'default' ? `
+            <button class="btn2 !w-auto px-4" onclick="askNotif()">🔔 Ativar Alertas</button>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 2. TELA: VAGAS (Vagas abertas + Minhas candidaturas)
+function vCandJobs() {
+  const currentSub = S.vagasSubtab || 'abertas';
+  const myApps = S.apps || [];
+
+  // Filtros de busca
+  let openJobs = S.jobs.filter(j => j.status === 'aberta');
+  if (S.jobSearch) {
+    const sTerm = normalizeText(S.jobSearch);
+    openJobs = openJobs.filter(j => normalizeText(j.cargo).includes(sTerm) || normalizeText(j.company).includes(sTerm));
+  }
+  if (S.jobAreaFilter) {
+    openJobs = openJobs.filter(j => j.area === S.jobAreaFilter);
+  }
+
+  return `
+    <div class="space-y-5">
+      <!-- Submenu interno de Vagas -->
+      <div class="flex border-b gap-3">
+        <button onclick="S.vagasSubtab='abertas';render()" class="tab-btn ${currentSub === 'abertas' ? 'active' : ''}">
+          💼 Vagas Abertas em Naviraí (${openJobs.length})
+        </button>
+        <button onclick="S.vagasSubtab='candidaturas';render()" class="tab-btn ${currentSub === 'candidaturas' ? 'active' : ''}">
+          📥 Minhas Candidaturas (${myApps.length})
+        </button>
+      </div>
+
+      ${currentSub === 'abertas' ? `
+        <!-- Filtros e Busca -->
+        <div class="card rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row gap-3">
+          <div class="flex-1">
+            <input type="text" value="${esc(S.jobSearch || '')}" oninput="S.jobSearch=this.value;render()"
+                   placeholder="🔍 Buscar por cargo ou empresa..." class="fi !mt-0">
+          </div>
+          <div class="sm:w-64">
+            <select onchange="S.jobAreaFilter=this.value;render()" class="fi !mt-0">
+              <option value="">Todas as Áreas Acadêmicas</option>
+              ${Object.keys(CNPQ_AREAS).map(a => `<option value="${esc(a)}" ${S.jobAreaFilter === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <!-- Lista de Vagas -->
+        <div class="space-y-3">
+          ${openJobs.length ? openJobs.map(jobCard).join('') : `
+            <div class="card rounded-2xl p-8 text-center mut">
+              <p class="text-base font-medium">Nenhuma vaga aberta encontrada com os filtros selecionados.</p>
+              <p class="text-xs mt-1">Fique atento, novas vagas são publicadas diariamente pelas empresas de Naviraí.</p>
+            </div>
+          `}
+        </div>
+      ` : `
+        <!-- Seção Minhas Candidaturas -->
+        <div class="space-y-3">
+          ${myApps.length ? myApps.map(app => {
+            const j = S.jobs.find(x => x.id === app.job_id);
+            const st = STAT_UI[app.status] || ['#FEF3C7', '#92400E', app.status];
+            return `
+              <div class="card rounded-2xl p-4.5 shadow-xs">
+                <div class="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <h3 class="font-bold text-base">${esc(j ? j.cargo : 'Vaga')}</h3>
+                    <p class="text-xs mut mt-0.5">${esc(j ? j.company : 'Empresa')} · 📍 ${esc(j ? j.bairro : '')} · 🕐 ${esc(j ? j.turno : '')}</p>
+                    ${j && j.area ? `<span class="inline-block mt-1 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">🏛️ ${esc(j.area)}</span>` : ''}
+                  </div>
+                  <div class="text-xs font-bold px-3 py-1.5 rounded-xl text-center" style="background:${st[0]};color:${st[1]}">
+                    ${st[2]}
+                  </div>
+                </div>
+                <div class="mt-3 pt-3 border-t flex items-center justify-between text-xs mut">
+                  <span>Inscrição enviada em ${new Date(app.created_at).toLocaleDateString('pt-BR')}</span>
+                  <span class="font-medium text-blue-600">Aguardando retorno do empregador</span>
+                </div>
+              </div>
+            `;
+          }).join('') : `
+            <div class="card rounded-2xl p-8 text-center mut">
+              <p class="text-base font-medium">Você ainda não se candidatou a nenhuma vaga.</p>
+              <p class="text-xs mt-1">Navegue pelas vagas abertas e envie sua candidatura com apenas 1 clique!</p>
+              <button onclick="S.vagasSubtab='abertas';render()" class="btn mt-4 !w-auto mx-auto px-5">Ver vagas disponíveis</button>
+            </div>
+          `}
+        </div>
+      `}
+    </div>
+  `;
+}
+
+function jobCard(j) {
+  const a = S.apps.find(x => x.job_id === j.id);
+  const closed = j.status === 'encerrada';
+  const have = S.me ? S.me.tags : D.tags;
+  const miss = j.tags.filter(t => !have.some(h => tagsMatch(h, t)));
+  const st = a && STAT_UI[a.status];
+  const candMock = S.me ? S.me : D;
+  const matchPct = score(candMock, j);
+  const matchColor = matchPct >= 70 ? 'text-green-700 bg-green-50' : matchPct >= 40 ? 'text-amber-700 bg-amber-50' : 'text-gray-600 bg-gray-100';
+
+  return `
+    <div class="card rounded-2xl p-4 sm:p-5 shadow-xs">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="font-bold text-base sm:text-lg">${esc(j.cargo)}</h3>
+            <span class="text-xs font-bold px-2 py-0.5 rounded-full ${matchColor}">🎯 ${matchPct}% Match</span>
+          </div>
+          <p class="text-xs sm:text-sm mut mt-0.5">${esc(j.company)} · 📍 ${esc(j.bairro)} · 🕐 ${esc(j.turno)}</p>
+          ${j.area ? `<p class="text-xs text-blue-700 mt-1 font-medium">🏛️ Área: ${esc(j.area)}</p>` : ''}
+        </div>
+        <span class="text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0"
+              style="background:${closed ? '#FEE2E2' : '#DCFCE7'};color:${closed ? '#991B1B' : '#166534'}">
+          ${closed ? '🔒 Encerrada' : '🟢 Aberta'}
+        </span>
+      </div>
+
+      <!-- Tags da vaga com destaque nas que combinam com o candidato -->
+      <div class="flex flex-wrap gap-1.5 mt-3">
+        ${j.tags.map(t => {
+          const isMatch = have.some(h => tagsMatch(h, t));
+          return `<span class="tag ${isMatch ? 'bg-green-100 text-green-800 font-semibold' : ''}">${isMatch ? '✓ ' : ''}${esc(t)}</span>`;
+        }).join('')}
+      </div>
+
+      ${miss.length && !a ? `
+        <p class="text-xs mt-3 mut bg-blue-50 dark:bg-slate-900 p-2.5 rounded-xl">
+          💡 <b>Dica de capacitação:</b> para se destacar ainda mais nesta vaga, vale adquirir habilidades em: <b>${esc(miss.join(', '))}</b>.
+          <a href="#" onclick="setTab('cursos');return false;" class="underline text-blue-600 font-medium ml-1">Veja cursos recomendados</a>.
+        </p>
+      ` : ''}
+
+      ${a ? `
+        <div class="mt-4 text-xs font-semibold px-3 py-2.5 rounded-xl text-center" style="background:${st[0]};color:${st[1]}">
+          ${st[2]} (Inscrição Realizada)
+        </div>
+      ` : closed ? `
+        <button disabled class="btn mt-4 opacity-60 cursor-not-allowed" style="background:var(--border);color:var(--muted)">Inscrições Encerradas</button>
+      ` : `
+        <button class="btn mt-4 py-2.5" onclick="applyJob('${j.id}')">🚀 Candidatar-se em 1 Clique</button>
+      `}
+    </div>
+  `;
+}
+
+// 3. TELA: CURSOS (IFMS & Meus Cursos)
+function vCandCourses() {
+  const currentArea = D.area || (S.me && S.me.area) || 'Engenharias';
+
+  return `
+    <div class="space-y-6">
+      <!-- Destaque: Cursos Livres IFMS -->
+      <div class="card rounded-2xl p-5 shadow-xs space-y-4">
+        <div class="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h2 class="font-bold text-xl flex items-center gap-2">🎓 Cursos Livres do IFMS & Sistema S</h2>
+            <p class="text-xs sm:text-sm mut mt-1">Cursos 100% gratuitos, online, de 20 a 60 horas com certificado digital emitido pelo Instituto Federal de Mato Grosso do Sul.</p>
+          </div>
+          <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-100 text-blue-800">Oficial IFMS</span>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-blue-50 dark:bg-slate-900/60 border text-xs sm:text-sm space-y-1">
+          <p class="font-semibold text-blue-900 dark:text-blue-300">💡 Sugestão para sua área (${esc(currentArea)}):</p>
+          <p class="mut">
+            ${currentArea === 'Engenharias'
+              ? 'Cursos de <b>Instalador Solar Fotovoltaico</b>, <b>Eletricidade Básica</b>, <b>NR-10</b> e <b>Desenho Técnico</b> contam com altíssima procura no setor solar e elétrico da nossa região.'
+              : currentArea === 'Ciências Sociais Aplicadas'
+              ? 'Cursos de <b>Gestão de Negócios</b>, <b>Atendimento ao Cliente</b>, <b>Assistente Administrativo</b> e <b>Marketing Digital</b> são os mais buscados pelo comércio de Naviraí.'
+              : currentArea === 'Ciências Exatas e da Terra'
+              ? 'Cursos de <b>Lógica de Programação</b>, <b>Informática Básica e Avançada</b> e <b>Planilhas Eletrônicas</b> abrem portas rápidas em empresas locais.'
+              : 'Navegue pelo catálogo e filtre por cursos que fortaleçam seu currículo e comprovem suas habilidades.'}
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <a class="btn py-2.5 text-center" href="${IFMS}" target="_blank" rel="noopener">🌐 Ver Catálogo de Cursos</a>
+          <a class="btn2 py-2.5 text-center" href="${AVA}" target="_blank" rel="noopener">🔑 Acessar Ambiente AVA IFMS</a>
+        </div>
+      </div>
+
+      <!-- Meus Cursos Concluídos -->
+      <div class="card rounded-2xl p-5 shadow-xs space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b">
+          <div>
+            <h3 class="font-bold text-base sm:text-lg">📜 Meus Cursos Concluídos (${D.courses.length})</h3>
+            <p class="text-xs mut">Adicione cursos para que as empresas vejam sua capacitação na triagem.</p>
+          </div>
+        </div>
+
+        ${D.courses.length ? `
+          <div class="space-y-2">
+            ${D.courses.map((c, i) => `
+              <div class="flex items-center justify-between gap-3 text-sm p-3 rounded-xl border bg-slate-50 dark:bg-slate-900/40">
+                <div class="space-y-0.5">
+                  <div class="font-semibold">${esc(c.name)} · <span class="text-blue-600 font-bold">${esc(c.hours)}h</span></div>
+                  <div class="text-xs mut">
+                    Origem: ${esc(c.src)}
+                    ${c.url ? ` · <a href="${esc(c.url)}" target="_blank" rel="noopener" class="text-blue-600 underline">Validar Certificado</a>` : ''}
+                  </div>
+                </div>
+                <button onclick="delCourse(${i})" class="text-xs text-red-600 hover:underline font-semibold p-1">Remover</button>
+              </div>
+            `).join('')}
+          </div>
+        ` : `
+          <p class="text-xs mut italic py-2">Nenhum curso concluído cadastrado ainda. Use o formulário abaixo para registrar seus certificados.</p>
+        `}
+
+        <!-- Formulário Adicionar Curso -->
+        <div class="pt-4 border-t space-y-3">
+          <h4 class="font-semibold text-sm">➕ Adicionar Novo Curso Concluído</h4>
+          <div class="grid sm:grid-cols-2 gap-3">
+            ${inp('Nome do curso', C.name, "upC('name',this.value)", 'Ex: Atendimento ao Cliente / Fotovoltaica')}
+            ${inp('Carga horária (horas)', C.hours, "upC('hours',this.value)", 'Ex: 40', 'number')}
+            ${sel('Instituição / Origem', FONTES, C.src, "upC('src',this.value)")}
+            ${inp('Link de autenticidade do certificado (opcional)', C.url, "upC('url',this.value)", 'https://...', 'url')}
+          </div>
+          <button class="btn2 !w-auto px-5 py-2 mt-2" onclick="addCourse()">Adicionar Curso à Lista</button>
+          <p class="text-[11px] mut">Após adicionar todos os cursos, clique em <b>"Salvar Meu Perfil"</b> na aba Cadastro para sincronizar seus dados.</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== EMPRESA: TELAS INDIVIDUAIS ====================
+
+// 1. TELA: PUBLICAR NOVA VAGA E MINHAS VAGAS
+function vEmpJobs() {
+  const own = S.jobs.filter(j => j.owner_id === S.user.id);
+  const ed = !!S.editJob;
+
+  return `
+    <div class="space-y-6">
+      <!-- Formulário de Publicação / Edição -->
+      <div class="card rounded-2xl p-5 shadow-xs">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b">
+          <div>
+            <h2 class="font-bold text-xl">${ed ? '✏️ Editar Vaga Publicada' : '📢 Publicar Nova Vaga'}</h2>
+            <p class="text-xs mut mt-0.5">Defina os requisitos e encontre jovens talentos qualificados de Naviraí.</p>
+          </div>
+          ${ed ? `<button onclick="cancelEdit()" class="text-xs text-red-600 font-semibold underline">Cancelar Edição</button>` : ''}
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-3.5">
+          ${inp('Nome da Empresa / Comércio', J.company, "upJ('company',this.value)", 'Ex: Mercado Central')}
+          ${inp('Cargo da Vaga', J.cargo, "upJ('cargo',this.value)", 'Ex: Auxiliar de Vendas / Eletricista Solar')}
+          ${sel('📍 Bairro da Loja / Empresa', BAIRROS, J.bairro, "setJ('bairro',this.value)")}
+          <div>
+            <label class="lb">🕐 Turno Exigido</label>
+            <div class="flex flex-wrap gap-1.5 mt-1.5">
+              ${TURNOS.map(t => chip(t, J.turno === t, `setJ('turno','${t}')`)).join('')}
+            </div>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="lb">Área Acadêmica Recomendada (Padrão CNPq / CAPES)</label>
+            <select onchange="setJ('area',this.value)" class="fi">
+              <option value="">Qualquer Área / Formação Geral</option>
+              ${Object.keys(CNPQ_AREAS).map(area => `
+                <option value="${esc(area)}" ${area === J.area ? 'selected' : ''}>${esc(area)}</option>
+              `).join('')}
+            </select>
+            <span class="text-[11px] mut">Opcional. Se selecionada, candidatos da área ganharão bônus no Match Score.</span>
+          </div>
+        </div>
+
+        <!-- Tags Exigidas para a Vaga -->
+        <div class="mt-4 pt-4 border-t">
+          ${renderTagInput('J')}
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2 mt-6 pt-4 border-t">
+          <button class="btn flex-1 py-3 text-base" onclick="saveJob()">
+            ${ed ? '💾 Salvar Alterações na Vaga' : '📢 Publicar Vaga no Mural'}
+          </button>
+          ${ed ? `<button class="btn2 !w-auto px-5" onclick="cancelEdit()">Cancelar</button>` : ''}
+        </div>
+      </div>
+
+      <!-- Minhas Vagas Cadastradas -->
+      <div class="card rounded-2xl p-5 shadow-xs space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b">
+          <h2 class="font-bold text-lg">🗂️ Minhas Vagas Cadastradas (${own.length})</h2>
+          <span class="text-xs mut">Gerencie o status e veja candidatos</span>
+        </div>
+
+        ${own.length ? `
+          <div class="space-y-3">
+            ${own.map(j => {
+              const appsCount = S.apps.filter(a => a.job_id === j.id).length;
+              return `
+                <div class="rounded-xl p-4 border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/40">
+                  <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <h4 class="font-bold text-base">${esc(j.cargo)}</h4>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${j.status === 'aberta' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                        ${j.status === 'aberta' ? '🟢 Aberta' : '🔒 Encerrada'}
+                      </span>
+                      ${appsCount > 0 ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">📥 ${appsCount} candidatura(s)</span>` : ''}
+                    </div>
+                    <p class="text-xs mut mt-1">📍 ${esc(j.bairro)} · 🕐 ${esc(j.turno)} ${j.area ? `· 🏛️ ${esc(j.area)}` : ''}</p>
+                    <div class="flex flex-wrap gap-1 mt-2">
+                      ${j.tags.map(t => `<span class="tag text-[10px]">${esc(t)}</span>`).join('')}
+                    </div>
+                  </div>
+
+                  <div class="flex sm:flex-col gap-2 shrink-0">
+                    <button onclick="pickJob('${j.id}');setTab('triagem')" class="btn !py-1.5 !px-3 text-xs">
+                      🎯 Ver Triagem
+                    </button>
+                    <div class="flex gap-2 text-xs font-semibold">
+                      <button onclick="editJob('${j.id}')" class="text-blue-600 hover:underline">Editar</button>
+                      <button onclick="toggleJob('${j.id}')" class="text-blue-600 hover:underline">
+                        ${j.status === 'aberta' ? 'Encerrar' : 'Reabrir'}
+                      </button>
+                      <button onclick="delJob('${j.id}')" class="text-red-600 hover:underline">Excluir</button>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : `
+          <p class="text-sm mut text-center py-6">Você ainda não publicou nenhuma vaga. Preencha o formulário acima para começar.</p>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+// 2. TELA: PAINEL DE TRIAGEM
+function vEmpScreening() {
+  const own = S.jobs.filter(j => j.owner_id === S.user.id);
+  const job = own.find(j => j.id === S.selJob) || own[0];
+
+  if (!own.length) {
+    return `
+      <div class="card rounded-2xl p-8 text-center mut space-y-3">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">🎯 Painel de Triagem</h3>
+        <p class="text-sm">Você precisa publicar uma vaga antes de acessar o painel de triagem e match de candidatos.</p>
+        <button onclick="setTab('vagas')" class="btn !w-auto mx-auto px-5">📢 Publicar Minha Primeira Vaga</button>
+      </div>
+    `;
+  }
+
+  // Filtragem de candidatos para a vaga selecionada
+  let candidates = S.cands.map(c => ({
+    c,
+    s: score(c, job),
+    applied: S.apps.find(a => a.job_id === job.id && a.candidate_id === c.user_id)
+  }));
+
+  // Filtro de status/inscrição
+  if (S.filterStatus === 'inscritos') {
+    candidates = candidates.filter(x => !!x.applied);
+  } else if (S.filterStatus === 'match60') {
+    candidates = candidates.filter(x => x.s >= 60);
+  }
+
+  // Filtro por Área Acadêmica
+  if (S.filterArea) {
+    candidates = candidates.filter(x => x.c.area === S.filterArea);
+  }
+
+  candidates.sort((a, b) => b.s - a.s);
+
+  return `
+    <div class="space-y-5">
+      <!-- Topo do Painel de Triagem: Seletor de vaga e Franquia -->
+      <div class="card rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+        <div class="flex items-center justify-between gap-3 flex-wrap pb-3 border-b">
+          <div>
+            <h2 class="font-bold text-xl flex items-center gap-2">🎯 Painel de Triagem de Talentos</h2>
+            <p class="text-xs mut">Candidatos ranqueados pelo algoritmo inteligente de Match Score.</p>
+          </div>
+          <span class="tag font-bold" style="background:${S.freeUsed ? '#F3F4F6' : '#DCFCE7'};color:${S.freeUsed ? '#6B7280' : '#166534'}">
+            ${S.freeUsed ? '🎁 Franquia grátis usada' : '🎁 1/1 Franquia Grátis disponível'}
+          </span>
+        </div>
+
+        <!-- Seletor de Vaga Ativa -->
+        <div class="grid sm:grid-cols-3 gap-3 items-end">
+          <div class="sm:col-span-2">
+            <label class="lb">Vaga em Triagem</label>
+            <select onchange="pickJob(this.value)" class="fi">
+              ${own.map(j => `
+                <option value="${j.id}" ${j.id === (job ? job.id : '') ? 'selected' : ''}>
+                  ${esc(j.cargo)} — ${esc(j.company)} (${j.status})
+                </option>
+              `).join('')}
+            </select>
+          </div>
+
+          <div class="text-xs mut bg-blue-50 dark:bg-slate-900 p-2.5 rounded-xl border">
+            <div><b>Local:</b> ${esc(job.bairro)} · <b>Turno:</b> ${esc(job.turno)}</div>
+            ${job.area ? `<div><b>Área:</b> ${esc(job.area)}</div>` : ''}
+          </div>
+        </div>
+
+        <!-- Barra de Filtros da Triagem -->
+        <div class="flex flex-wrap gap-2 pt-2 items-center text-xs">
+          <span class="lb mr-1">Filtrar:</span>
+          ${chip('Todos os Candidatos', S.filterStatus === 'todos', "S.filterStatus='todos';render()")}
+          ${chip('Apenas Inscritos na Vaga', S.filterStatus === 'inscritos', "S.filterStatus='inscritos';render()")}
+          ${chip('Match Alto (≥ 60%)', S.filterStatus === 'match60', "S.filterStatus='match60';render()")}
+
+          <select onchange="S.filterArea=this.value;render()" class="fi !mt-0 !py-1 text-xs sm:w-auto">
+            <option value="">Todas as Áreas CNPq</option>
+            ${Object.keys(CNPQ_AREAS).map(a => `<option value="${esc(a)}" ${S.filterArea === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+
+      <!-- Lista de Candidatos Ranqueados -->
+      <div class="space-y-3">
+        ${candidates.length ? candidates.map(r => candRow(r.c, job)).join('') : `
+          <div class="card rounded-2xl p-8 text-center mut">
+            <p class="text-base font-semibold">Nenhum candidato encontrado com estes critérios.</p>
+            <p class="text-xs mt-1">Tente ajustar os filtros acima para visualizar mais perfis.</p>
+          </div>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+function candRow(c, j) {
+  const sc = score(c, j);
+  const un = S.unlocks.has(c.user_id);
+  const a = S.apps.find(x => x.job_id === j.id && x.candidate_id === c.user_id);
+  const col = sc >= 70 ? ['#DCFCE7', '#166534'] : sc >= 40 ? ['#FEF3C7', '#92400E'] : ['#F3F4F6', '#6B7280'];
+  const msg = encodeURIComponent(`Olá ${c.name}! Vi seu perfil no ConectaNav e gostaria de agendar uma entrevista para a vaga de ${j.cargo}. Podemos conversar?`);
+  const matched = getMatchedTags(c, j);
+
+  return `
+    <div class="card rounded-2xl p-4 sm:p-5 shadow-xs border">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h4 class="font-bold text-base sm:text-lg">${esc(c.name)}</h4>
+            ${a ? '<span class="tag text-[10px] font-bold" style="background:#FEF3C7;color:#92400E">📥 Candidatou-se</span>' : ''}
+          </div>
+          <p class="text-xs mut mt-0.5">${esc(c.age)} anos · 📍 ${esc(c.bairro)} · 🕐 ${esc(c.turno)}</p>
+          ${c.area ? `
+            <div class="mt-1 text-xs font-semibold text-blue-700 dark:text-blue-400 flex items-center gap-1.5 flex-wrap">
+              <span>🏛️ ${esc(c.area)}</span>
+              ${c.subarea ? `<span>· <i>${esc(c.subarea === 'Outro curso de Exatas' || c.subarea.startsWith('Outro') ? (c.custom_subarea || c.subarea) : c.subarea)}</i></span>` : ''}
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="text-center shrink-0 px-3 py-1.5 rounded-xl border" style="background:${col[0]};color:${col[1]}">
+          <div class="text-xl font-black leading-none">${sc}%</div>
+          <div class="text-[9px] font-bold uppercase tracking-wider mt-0.5">MATCH</div>
+        </div>
+      </div>
+
+      <!-- Habilidades / Tags do Candidato -->
+      <div class="flex flex-wrap gap-1.5 mt-3">
+        ${c.tags.map(t => {
+          const isCommon = matched.includes(t);
+          return `<span class="tag text-xs ${isCommon ? 'bg-green-100 text-green-900 font-bold border border-green-300' : ''}">${isCommon ? '★ ' : ''}${esc(t)}</span>`;
+        }).join('')}
+      </div>
+
+      <!-- Cursos Concluídos do Candidato -->
+      ${c.courses && c.courses.length ? `
+        <div class="mt-3 text-xs p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border space-y-1">
+          <div class="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+            <span>📜 Cursos Concluídos (${c.courses.length}):</span>
+          </div>
+          ${c.courses.map(k => `
+            <div class="mut flex items-center justify-between gap-2">
+              <span>• ${esc(k.name)} (${esc(k.hours)}h - ${esc(k.src)})</span>
+              ${/^https:\/\//.test(k.url || '') ? `<a href="${esc(k.url)}" target="_blank" rel="noopener nofollow" class="underline text-blue-600 font-medium shrink-0">ver certificado</a>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <!-- Status da Candidatura (se o candidato aplicou) -->
+      ${a ? `
+        <div class="mt-3 pt-3 border-t">
+          <label class="lb">Status do Processo Seletivo</label>
+          <select class="fi !mt-1 text-xs" onchange="setAppStatus('${a.id}', this.value)">
+            ${STAT.map(s => `<option ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      ` : ''}
+
+      <!-- Botão de Ação: WhatsApp ou Desbloquear Contato -->
+      <div class="mt-4 pt-3 border-t">
+        ${un && S.phones[c.user_id] ? `
+          <a class="btn !bg-emerald-600 hover:!bg-emerald-700 text-white shadow-sm flex items-center justify-center gap-2"
+             href="https://wa.me/${esc(waNum(S.phones[c.user_id]))}?text=${msg}" target="_blank" rel="noopener">
+            💬 Iniciar Conversa no WhatsApp (${esc(S.phones[c.user_id])})
+          </a>
+        ` : `
+          <button class="btn2 shadow-sm flex items-center justify-center gap-2" onclick="unlock('${c.user_id}')">
+            🔒 Desbloquear Contato WhatsApp ${!S.freeUsed ? '(Grátis 1x)' : '(R$ 15,00 via Pix)'}
+          </button>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+// ==================== VIEWS DE AUTENTICAÇÃO & ONBOARDING ====================
+function vLogin() {
+  const m = AUTH.mode, d = S.sent;
+  const msg = d === 'confirm' ? '📧 Cadastro feito! Confirme seu e-mail pelo link que enviamos e depois entre com sua senha.' : d === 'reset' ? '📧 Enviamos um link para você criar uma nova senha.' : '';
+
+  return `
+    <div class="card rounded-2xl p-6 shadow-sm space-y-4 max-w-md mx-auto mt-4">
+      <div class="text-center space-y-1 pb-2">
+        <h2 class="font-bold text-2xl tracking-tight">${m === 'signup' ? 'Criar sua conta' : m === 'reset' ? 'Recuperar senha' : 'Entrar no ConectaNav'}</h2>
+        <p class="text-xs sm:text-sm mut">Conectando vagas do comércio e talentos de Naviraí-MS.</p>
+      </div>
+
+      ${msg ? `
+        <div class="p-3.5 rounded-xl text-sm font-medium bg-green-50 text-green-800 border border-green-200">${msg}</div>
+      ` : `
+        <div class="space-y-3">
+          ${inp('E-mail', EMAIL, "EMAIL=this.value", 'voce@email.com', 'email')}
+          ${m !== 'reset' ? inp('Senha', AUTH.pw, "AUTH.pw=this.value", 'mínimo 8 caracteres', 'password') : ''}
+          ${m === 'signup' ? inp('Repita a senha', AUTH.pw2, "AUTH.pw2=this.value", '', 'password') : ''}
+          <button class="btn py-2.5 mt-2" onclick="${m === 'signup' ? 'signUp()' : m === 'reset' ? 'resetPw()' : 'signIn()'}">
+            ${m === 'signup' ? 'Criar conta' : m === 'reset' ? 'Enviar link de recuperação' : 'Entrar na Plataforma'}
+          </button>
+        </div>
+      `}
+
+      <div class="flex justify-between items-center text-xs font-semibold text-blue-600 pt-3 border-t">
+        ${m === 'login' ? `
+          <button onclick="authMode('signup')">Criar nova conta</button>
+          <button onclick="authMode('reset')">Esqueci a senha</button>
+        ` : `
+          <button onclick="authMode('login')">← Voltar para a tela de login</button>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+function vNewPw() {
+  return `
+    <div class="card rounded-2xl p-6 shadow-sm space-y-4 max-w-md mx-auto mt-4">
+      <h2 class="font-bold text-xl">Crie sua nova senha</h2>
+      ${inp('Nova senha', AUTH.pw, "AUTH.pw=this.value", 'mínimo 8 caracteres', 'password')}
+      ${inp('Repita a senha', AUTH.pw2, "AUTH.pw2=this.value", '', 'password')}
+      <button class="btn" onclick="setNewPw()">Salvar nova senha</button>
+    </div>
+  `;
+}
+
+function vOnboard() {
+  return `
+    <div class="card rounded-2xl p-6 shadow-sm space-y-5 max-w-md mx-auto mt-4">
+      <div class="text-center space-y-1">
+        <h2 class="font-bold text-2xl">Bem-vindo ao ConectaNav</h2>
+        <p class="text-xs sm:text-sm mut">Como você deseja utilizar a plataforma?</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="OB.role='candidato';render()" class="chip rounded-2xl p-4 text-center font-bold flex flex-col items-center gap-1.5 ${OB.role === 'candidato' ? 'active' : ''}">
+          <span class="text-2xl">🎓</span>
+          <span class="text-sm">Sou Candidato</span>
+          <span class="text-[10px] font-normal opacity-80">(16 a 29 anos)</span>
+        </button>
+        <button onclick="OB.role='empresa';render()" class="chip rounded-2xl p-4 text-center font-bold flex flex-col items-center gap-1.5 ${OB.role === 'empresa' ? 'active' : ''}">
+          <span class="text-2xl">🏪</span>
+          <span class="text-sm">Sou Empresa</span>
+          <span class="text-[10px] font-normal opacity-80">(Comércio / PME)</span>
+        </button>
+      </div>
+
+      <label class="flex items-start gap-2.5 text-xs mut cursor-pointer p-2 rounded-xl bg-slate-50 dark:bg-slate-900/50">
+        <input type="checkbox" ${OB.consent ? 'checked' : ''} onchange="OB.consent=this.checked" class="mt-0.5">
+        <span>Li e concordo com a <a href="#" onclick="showPrivacy();return false" class="underline text-blue-600 font-semibold">Política de Privacidade</a> e o tratamento de dados pessoais.</span>
+      </label>
+
+      <button class="btn py-3" onclick="createProfile()">Continuar</button>
+    </div>
+  `;
+}
+
+// ==================== PIX MODAL ====================
+function pixModal() {
+  if (!S.pix) return '';
+  const c = S.cands.find(x => x.user_id === S.pix.id);
+  const p = S.pix;
+
+  return `
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.6)">
+      <div class="card rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center space-y-3">
+        <h3 class="font-bold text-xl">Desbloquear Contato WhatsApp</h3>
+        <p class="text-xs sm:text-sm mut">Sua 1ª franquia grátis já foi utilizada. No <b>Pay-per-Hire</b> você paga apenas para liberar o contato direto de ${esc(c ? c.name : 'candidato')}.</p>
+        <div class="py-3 rounded-2xl bg-blue-50 dark:bg-slate-900 border">
+          <div class="text-3xl font-extrabold text-blue-700">R$ 15,00</div>
+          <div class="text-[11px] mut">Pagamento único via Pix com liberação imediata</div>
+        </div>
+        ${p.loading ? `
+          <div class="py-6 mut text-sm animate-pulse">Gerando QR Code Pix…</div>
+        ` : `
+          <img alt="QR Code Pix" class="mx-auto w-48 h-48 rounded-xl shadow-xs" src="data:image/png;base64,${esc(p.qr_base64)}">
+          <button class="btn2 mt-2" onclick="copyPix()">📋 Copiar código Pix</button>
+          <p class="text-[11px] mut">Aguardando pagamento… esta tela fechará automaticamente quando confirmado.</p>
+        `}
+        <button class="mt-2 text-xs font-semibold text-gray-500 hover:text-gray-800" onclick="cancelPix()">Cancelar</button>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== SUB-NAVBAR COM ABAS INDIVIDUAIS ====================
+function renderSubNav() {
+  if (!S.user || !S.role) return '';
+
+  if (S.role === 'candidato') {
+    const appsCount = (S.apps || []).length;
+    const coursesCount = (D.courses || []).length;
+    return `
+      <div class="max-w-4xl mx-auto px-4 flex gap-1 sm:gap-4 overflow-x-auto">
+        <button onclick="setTab('cadastro')" class="tab-btn ${S.tab === 'cadastro' ? 'active' : ''}">
+          👤 Cadastro & Meu Perfil
+        </button>
+        <button onclick="setTab('vagas')" class="tab-btn ${S.tab === 'vagas' ? 'active' : ''}">
+          💼 Vagas ${appsCount ? `<span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">${appsCount}</span>` : ''}
+        </button>
+        <button onclick="setTab('cursos')" class="tab-btn ${S.tab === 'cursos' ? 'active' : ''}">
+          🎓 Cursos ${coursesCount ? `<span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">${coursesCount}</span>` : ''}
+        </button>
+      </div>
+    `;
+  }
+
+  if (S.role === 'empresa') {
+    const own = S.jobs.filter(j => j.owner_id === S.user.id);
+    return `
+      <div class="max-w-4xl mx-auto px-4 flex gap-1 sm:gap-4 overflow-x-auto">
+        <button onclick="setTab('vagas')" class="tab-btn ${S.tab === 'vagas' ? 'active' : ''}">
+          📢 Publicar & Minhas Vagas ${own.length ? `<span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">${own.length}</span>` : ''}
+        </button>
+        <button onclick="setTab('triagem')" class="tab-btn ${S.tab === 'triagem' ? 'active' : ''}">
+          🎯 Painel de Triagem
+        </button>
+      </div>
+    `;
+  }
+
+  return '';
+}
+
+// ==================== RENDER PRINCIPAL ====================
+function render() {
+  // Badge no topo
+  $('roleBadge').textContent = S.role ? (S.role === 'candidato' ? '🎓 Candidato' : '🏪 Empresa') : '';
+  $('userActions').innerHTML = S.user ? `
+    <button onclick="logout()" class="text-xs font-semibold px-2.5 py-1 rounded-lg border hover:bg-red-50 hover:text-red-700 transition" title="Sair da conta">Sair</button>
+  ` : '';
+
+  // Barra de abas individuais
+  $('subnav').innerHTML = renderSubNav();
+
+  let h;
+  if (!sb) {
+    h = '<div class="card rounded-2xl p-6 mt-6 max-w-md mx-auto"><h2 class="font-bold text-lg">Configuração pendente</h2><p class="text-xs mut mt-1">Preencha SUPABASE_URL e SUPABASE_ANON_KEY em <code>config.js</code>.</p></div>';
+  } else if (S.loading) {
+    h = '<div class="text-center mut mt-16 font-medium">Carregando ConectaNav…</div>';
+  } else if (S.user && S.recovery) {
+    h = vNewPw();
+  } else if (!S.user) {
+    h = vLogin();
+  } else if (!S.role) {
+    h = vOnboard();
+  } else {
+    // Roteamento de telas individuais
+    if (S.role === 'candidato') {
+      if (S.tab === 'cadastro') h = vCandProfile();
+      else if (S.tab === 'cursos') h = vCandCourses();
+      else h = vCandJobs();
+    } else {
+      if (S.tab === 'triagem') h = vEmpScreening();
+      else h = vEmpJobs();
+    }
+
+    h += `
+      <footer class="flex justify-center gap-4 text-xs mut mt-12 pt-6 border-t flex-wrap">
+        <a href="#" onclick="showPrivacy();return false" class="underline">Política de Privacidade</a>
+        <button onclick="logout()" class="underline">Encerrar Sessão</button>
+        <button onclick="deleteAccount()" class="underline text-red-600">Excluir minha conta</button>
+      </footer>
+    `;
+  }
+
+  $('app').innerHTML = h;
+  if (S.pix) $('modal').innerHTML = pixModal();
+}
+
+// Inicialização com Supabase Auth
+if (sb) {
+  sb.auth.onAuthStateChange((_e, ses) => {
+    const u = ses && ses.user, rec = _e === 'PASSWORD_RECOVERY';
+    if (u && S.user && u.id === S.user.id) {
+      if (rec) { S.recovery = true; render(); }
+      return;
+    }
+    if (u) {
+      resetS();
+      S.user = u;
+      if (rec) S.recovery = true;
+      setTimeout(loadAll, 0);
+    } else {
+      resetS();
+      S.loading = false;
+    }
+    render();
+  });
+} else {
+  S.loading = false;
+  render();
+}
+
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
 </script>
 </body>
 </html>
