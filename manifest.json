@@ -1,0 +1,2 @@
+{ "name":"ConectaNav","short_name":"ConectaNav","description":"Vagas e talentos de Naviraí-MS","start_url":"/","display":"standalone","background_color":"#F4F6F8","theme_color":"#0052CC","lang":"pt-BR",
+  "icons":[{"src":"/icon-192.png","sizes":"192x192","type":"image/png"},{"src":"/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}] }

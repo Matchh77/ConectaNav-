@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0052CC">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png">
+<title>ConectaNav — Vagas e talentos de Naviraí-MS</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="/config.js"></script>
+<style>
+:root{--brand:#0052CC;--brand-light:#E6EEFF;--bg:#F4F6F8;--card:#fff;--text:#1F2937;--muted:#6B7280;--border:#E5E7EB}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1720;--card:#1A2530;--text:#F3F4F6;--muted:#9CA3AF;--border:#2A3644;--brand-light:#13233F}}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.card{background:var(--card);border:1px solid var(--border)}
+.chip{border:1px solid var(--border);color:var(--text);transition:.15s}
+.chip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.lb{font-size:12px;font-weight:500;color:var(--muted)}
+.fi{width:100%;margin-top:4px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:transparent;color:var(--text)}
+.btn{display:block;text-align:center;width:100%;padding:10px;border-radius:12px;color:#fff;font-weight:600;font-size:14px;background:var(--brand)}
+.btn2{display:block;text-align:center;width:100%;padding:9px;border-radius:12px;font-weight:600;font-size:14px;border:1.5px solid var(--brand);color:var(--brand)}
+.tag{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--brand-light);color:var(--brand)}
+.mut{color:var(--muted)}
+.toast{animation:up .25s ease-out}@keyframes up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+</style>
+</head>
+<body class="min-h-screen">
+<nav class="sticky top-0 z-30 card border-b">
+  <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold" style="background:var(--brand)">C</div><span class="font-bold text-lg">ConectaNav</span></div>
+    <span id="roleBadge" class="tag"></span>
+  </div>
+</nav>
+<main id="app" class="max-w-3xl mx-auto px-4 py-5 pb-24"></main>
+<div id="toasts" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center px-4 w-full max-w-sm"></div>
+<div id="modal"></div>
+
+<script>
+const SKILLS=['Atendimento ao Cliente','Operador de Caixa','Reposição de Estoque','Informática Básica','Vendas','Pacote Office'];
+const BAIRROS=['Centro','Jardim MS','Vila Maria','Cidade Jardim','BR-163'];
+const TURNOS=['Manhã','Tarde','Noite','Integral'];
+const NEI={'Centro':['Vila Maria','Cidade Jardim'],'Jardim MS':['Vila Maria','BR-163'],'Vila Maria':['Centro','Jardim MS'],'Cidade Jardim':['Centro','BR-163'],'BR-163':['Jardim MS','Cidade Jardim']};
+const STAT=['Análise','Entrevista Agendada','Não selecionado'];
+const STAT_UI={'Análise':['#FEF3C7','#92400E','⏳ Em Análise'],'Entrevista Agendada':['#DCFCE7','#166534','📅 Entrevista Agendada'],'Não selecionado':['#FEE2E2','#991B1B','✖️ Não selecionado']};
+const CAT={'Atendimento ao Cliente':'Negócios e Gestão','Operador de Caixa':'Negócios e Gestão','Reposição de Estoque':'Negócios e Gestão','Vendas':'Negócios e Gestão','Informática Básica':'Tecnologias','Pacote Office':'Tecnologias'};
+const IFMS='https://cursoslivres.ifms.edu.br/#cursos', AVA='https://ava.cursoslivres.ifms.edu.br/login/index.php';
+const FONTES=['IFMS Cursos Livres','Sistema S (SENAC/SENAI/SEBRAE)','Outro'];
+
+const cfg=window.CONECTANAV||{};
+const sb=(cfg.SUPABASE_URL&&window.supabase)?supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY):null;
+const blankD=()=>({name:'',age:'',phone:'',bairro:'Centro',turno:'Manhã',ifms:false,tags:[],courses:[]});
+const blankJ=()=>({company:'',bairro:'Centro',cargo:'',turno:'Manhã',tags:[]});
+const blankC=()=>({name:'',hours:'',url:'',src:FONTES[0]});
+let S,D=blankD(),J=blankJ(),C=blankC(),OB={role:'candidato',consent:false},EMAIL='',pollT=null;
+function resetS(){S={loading:true,user:null,role:null,me:null,jobs:[],cands:[],apps:[],unlocks:new Set(),phones:{},freeUsed:false,selJob:null,editJob:null,pix:null,sent:false};D=blankD();J=blankJ();C=blankC();}
+resetS();
+
+// ---------- helpers ----------
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const okTags=a=>(a||[]).filter(t=>SKILLS.includes(t));
+const chip=(l,a,fn)=>`<button type="button" onclick="${fn}" class="chip px-3 py-1.5 rounded-full text-xs sm:text-sm ${a?'active':''}">${esc(l)}</button>`;
+const inp=(l,v,fn,ph,t='text')=>`<div><label class="lb">${l}</label><input type="${t}" value="${esc(v)}" oninput="${fn}" placeholder="${ph}" class="fi"></div>`;
+const sel=(l,opts,v,fn)=>`<div><label class="lb">${l}</label><select onchange="${fn}" class="fi">${opts.map(o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`).join('')}</select></div>`;
+function toast(m){const e=document.createElement('div');e.className='toast px-4 py-2.5 rounded-xl shadow-lg text-sm font-medium text-white text-center';e.style.background='#0052CC';e.textContent=m;$('toasts').appendChild(e);setTimeout(()=>{e.style.transition='opacity .3s';e.style.opacity=0;setTimeout(()=>e.remove(),300)},3200);}
+function notify(t,b){toast(t+' '+b);try{if('Notification' in window&&Notification.permission==='granted')new Notification(t,{body:b,icon:'/icon-192.png'});}catch(e){}}
+function maskPhone(el){let v=el.value.replace(/\D/g,'').slice(0,11);
+  v=v.length>10?v.replace(/^(\d{2})(\d{5})(\d{4})$/,'($1) $2-$3'):v.length>6?v.replace(/^(\d{2})(\d{4})(\d{0,4})$/,'($1) $2-$3'):v.length>2?v.replace(/^(\d{2})(\d{0,5})$/,'($1) $2'):v.length?'('+v:'';
+  el.value=v;D.phone=v;}
+const waNum=p=>{let c=String(p||'').replace(/\D/g,'');return(c.length===10||c.length===11)?'55'+c:c;};
+function score(c,j){if(!j)return 0;const t=j.tags.length?c.tags.filter(x=>j.tags.includes(x)).length/j.tags.length:0;
+  const u=(c.turno===j.turno||c.turno==='Integral')?1:0;const g=c.bairro===j.bairro?1:(NEI[j.bairro]||[]).includes(c.bairro)?.5:0;
+  return Math.round(t*50+u*25+g*25);}
+const upD=(f,v)=>{D[f]=v};const upJ=(f,v)=>{J[f]=v};const upC=(f,v)=>{C[f]=v};
+const setD=(f,v)=>{D[f]=v;render()};const setJ=(f,v)=>{J[f]=v;render()};
+function tog(o,t){const a=(o==='D'?D:J).tags,i=a.indexOf(t);i>-1?a.splice(i,1):a.push(t);render();}
+
+// ---------- dados ----------
+async function loadAll(){
+  const uid=S.user.id;
+  const p=await sb.from('profiles').select('*').eq('id',uid).maybeSingle();
+  S.role=p.data?p.data.role:null;S.freeUsed=!!(p.data&&p.data.free_unlock_used);
+  if(S.role){await loadData(true);subscribe();}
+  S.loading=false;render();
+}
+async function loadData(first){
+  const uid=S.user.id;
+  S.jobs=(await sb.from('jobs').select('*').order('created_at',{ascending:false})).data||[];
+  S.jobs.forEach(j=>j.tags=okTags(j.tags));
+  if(S.role==='candidato'){
+    const old=Object.fromEntries(S.apps.map(a=>[a.id,a.status]));
+    S.apps=(await sb.from('applications').select('*').eq('candidate_id',uid)).data||[];
+    if(!first)S.apps.forEach(a=>{if(old[a.id]&&old[a.id]!==a.status){const j=S.jobs.find(x=>x.id===a.job_id);notify('Candidatura atualizada',(j?j.cargo+': ':'')+a.status);}});
+    if(first){
+      const me=(await sb.from('candidates').select('*').eq('user_id',uid).maybeSingle()).data;
+      if(me){me.tags=okTags(me.tags);S.me=me;
+        const ph=(await sb.from('candidate_contacts').select('phone').eq('user_id',uid).maybeSingle()).data;
+        D={name:me.name,age:me.age,phone:ph?ph.phone:'',bairro:me.bairro,turno:me.turno,ifms:me.ifms,tags:[...me.tags],courses:Array.isArray(me.courses)?me.courses:[]};}
+    }
+  }else{
+    S.cands=((await sb.from('candidates').select('*')).data||[]).map(c=>({...c,tags:okTags(c.tags),courses:Array.isArray(c.courses)?c.courses:[]}));
+    S.apps=(await sb.from('applications').select('*')).data||[];
+    S.unlocks=new Set(((await sb.from('unlocks').select('candidate_id').eq('company_id',uid)).data||[]).map(x=>x.candidate_id));
+    await loadPhones();
+    const own=S.jobs.filter(j=>j.owner_id===uid);
+    if(!own.find(j=>j.id===S.selJob))S.selJob=own[0]?own[0].id:null;
+    if(first&&own[0])J.company=own[0].company;
+  }
+}
+async function loadPhones(){const ids=[...S.unlocks];if(!ids.length)return;
+  const r=(await sb.from('candidate_contacts').select('user_id,phone').in('user_id',ids)).data||[];r.forEach(x=>S.phones[x.user_id]=x.phone);}
+function subscribe(){if(S.ch)return;
+  const f=async()=>{await loadData(false);if(S.pix&&S.unlocks.has(S.pix.id)){closePix();toast('✅ Pagamento confirmado! Contato liberado.');}render();};
+  S.ch=sb.channel('cn').on('postgres_changes',{event:'*',schema:'public',table:'applications'},f)
+    .on('postgres_changes',{event:'*',schema:'public',table:'unlocks'},f)
+    .on('postgres_changes',{event:'*',schema:'public',table:'jobs'},f).subscribe();}
+
+// ---------- auth / LGPD ----------
+async function sendLink(){
+  if(!/^\S+@\S+\.\S+$/.test(EMAIL))return toast('⚠️ Informe um e-mail válido');
+  const r=await sb.auth.signInWithOtp({email:EMAIL,options:{emailRedirectTo:location.origin}});
+  if(r.error)return toast('⚠️ '+r.error.message);S.sent=true;render();}
+async function createProfile(){
+  if(!OB.consent)return toast('⚠️ É preciso aceitar a Política de Privacidade');
+  const r=await sb.from('profiles').insert({id:S.user.id,role:OB.role});
+  if(r.error)return toast('⚠️ '+r.error.message);
+  S.role=OB.role;S.loading=true;render();await loadData(true);subscribe();S.loading=false;render();}
+async function logout(){if(S.ch){sb.removeChannel(S.ch);}await sb.auth.signOut();}
+async function deleteAccount(){
+  if(!confirm('Excluir sua conta e TODOS os seus dados? Isso não pode ser desfeito.'))return;
+  const r=await sb.rpc('delete_my_account');if(r.error)return toast('⚠️ '+r.error.message);
+  await logout();toast('Conta excluída.');}
+function showPrivacy(){$('modal').innerHTML=`<div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.5)"><div class="card rounded-2xl p-5 w-full max-w-md max-h-[85vh] overflow-auto text-sm space-y-2">
+<h3 class="font-bold text-lg">Política de Privacidade (rascunho)</h3>
+<p><b>Dados coletados:</b> nome, idade, bairro, turno, habilidades, cursos informados, telefone e e-mail de acesso.</p>
+<p><b>Finalidade:</b> conectar candidatos e lojistas de Naviraí-MS para vagas.</p>
+<p><b>Compartilhamento:</b> seu telefone só é visto por uma empresa depois que ela desbloqueia seu contato. Nome, idade, bairro, turno, habilidades e cursos ficam visíveis para empresas cadastradas.</p>
+<p><b>Seus direitos:</b> corrigir seus dados no perfil e excluir a conta a qualquer momento (botão "Excluir minha conta").</p>
+<p class="mut">Texto-modelo: revise com um profissional jurídico antes do lançamento.</p>
+<button class="btn" onclick="$('modal').innerHTML=''">Fechar</button></div></div>`;}
+function askNotif(){Notification.requestPermission().then(()=>render());}
+
+// ---------- candidato ----------
+async function saveProfile(){
+  const age=Number(D.age);
+  if(!D.name.trim()||!age||D.phone.replace(/\D/g,'').length<10)return toast('⚠️ Preencha nome, idade e telefone válido');
+  if(age<16||age>29)return toast('⚠️ A plataforma atende jovens de 16 a 29 anos');
+  const row={user_id:S.user.id,name:D.name.trim(),age,bairro:D.bairro,turno:D.turno,ifms:D.ifms,tags:D.tags,courses:D.courses,updated_at:new Date().toISOString()};
+  let r=await sb.from('candidates').upsert(row);if(r.error)return toast('⚠️ '+r.error.message);
+  r=await sb.from('candidate_contacts').upsert({user_id:S.user.id,phone:D.phone});if(r.error)return toast('⚠️ '+r.error.message);
+  S.me={...row};render();toast('✅ Perfil Ativo!');}
+function addCourse(){
+  const h=Number(C.hours);
+  if(!C.name.trim())return toast('⚠️ Informe o nome do curso');
+  if(!h||h<1||h>400)return toast('⚠️ Carga horária entre 1 e 400 h');
+  if(C.url&&!/^https:\/\/\S+$/.test(C.url.trim()))return toast('⚠️ O link deve começar com https://');
+  if(D.courses.length>=10)return toast('Limite de 10 cursos');
+  D.courses.push({name:C.name.trim().slice(0,80),hours:h,url:C.url.trim(),src:C.src});C=blankC();render();toast('Curso adicionado. Toque em Salvar Meu Perfil.');}
+function delCourse(i){D.courses.splice(i,1);render();}
+async function applyJob(id){
+  if(!S.me)return toast('⚠️ Salve seu perfil antes de se candidatar');
+  const r=await sb.from('applications').insert({job_id:id,candidate_id:S.user.id});
+  if(r.error)return toast(r.error.code==='23505'?'Você já se candidatou a esta vaga':'⚠️ '+r.error.message);
+  await loadData(false);render();toast('🚀 Candidatura enviada!');}
+
+// ---------- empresa ----------
+async function saveJob(){
+  if(!J.company.trim()||!J.cargo.trim())return toast('⚠️ Preencha empresa e cargo');
+  const row={company:J.company.trim(),bairro:J.bairro,cargo:J.cargo.trim(),turno:J.turno,tags:J.tags};
+  const r=S.editJob?await sb.from('jobs').update(row).eq('id',S.editJob):await sb.from('jobs').insert({...row,owner_id:S.user.id}).select().single();
+  if(r.error)return toast('⚠️ '+r.error.message);
+  toast(S.editJob?'✏️ Vaga atualizada!':'📢 Vaga publicada!');
+  if(!S.editJob&&r.data)S.selJob=r.data.id;
+  S.editJob=null;const c=J.company;J=blankJ();J.company=c;await loadData(false);render();}
+function editJob(id){const j=S.jobs.find(x=>x.id===id);if(!j)return;S.editJob=id;J={company:j.company,bairro:j.bairro,cargo:j.cargo,turno:j.turno,tags:[...j.tags]};render();scrollTo({top:0,behavior:'smooth'});}
+function cancelEdit(){S.editJob=null;J=blankJ();render();}
+async function toggleJob(id){const j=S.jobs.find(x=>x.id===id);const st=j.status==='aberta'?'encerrada':'aberta';
+  const r=await sb.from('jobs').update({status:st}).eq('id',id);if(r.error)return toast('⚠️ '+r.error.message);await loadData(false);render();toast(st==='encerrada'?'🔒 Vaga encerrada':'🟢 Vaga reaberta');}
+async function delJob(id){if(!confirm('Excluir esta vaga e suas candidaturas?'))return;
+  const r=await sb.from('jobs').delete().eq('id',id);if(r.error)return toast('⚠️ '+r.error.message);await loadData(false);render();toast('🗑️ Vaga excluída');}
+async function setAppStatus(id,st){const r=await sb.from('applications').update({status:st}).eq('id',id);if(r.error)return toast('⚠️ '+r.error.message);await loadData(false);render();toast('Status atualizado');}
+function pickJob(id){S.selJob=id;render();}
+async function unlock(id){
+  if(S.unlocks.has(id))return;
+  if(!S.freeUsed){const r=await sb.rpc('unlock_free',{p_candidate:id});if(r.error)return toast('⚠️ '+r.error.message);
+    S.freeUsed=true;S.unlocks.add(id);await loadPhones();render();return toast('🎉 Contato desbloqueado! (1/1 Franquia Grátis usada)');}
+  S.pix={id,loading:true};render();
+  try{const ses=(await sb.auth.getSession()).data.session;
+    const r=await fetch('/api/pix-create',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+ses.access_token},body:JSON.stringify({candidate_id:id})});
+    const j=await r.json();if(!r.ok)throw new Error(j.error||'Erro');
+    S.pix={id,...j};render();
+    pollT=setInterval(async()=>{await loadData(false);if(S.unlocks.has(id)){closePix();render();toast('✅ Pagamento confirmado! Contato liberado.');}},4000);
+  }catch(e){S.pix=null;render();toast('⚠️ '+e.message);}}
+function closePix(){clearInterval(pollT);S.pix=null;$('modal').innerHTML='';}
+function cancelPix(){closePix();render();}
+function copyPix(){navigator.clipboard.writeText(S.pix.qr_code).then(()=>toast('Código Pix copiado'));}
+
+// ---------- views ----------
+function vLogin(){return `<div class="card rounded-2xl p-5 shadow-sm space-y-3 mt-6">
+<h2 class="font-bold text-xl">Entre no ConectaNav</h2><p class="text-sm mut">Vagas do comércio e jovens talentos de Naviraí-MS. Enviamos um link de acesso para o seu e-mail, sem senha.</p>
+${S.sent?`<div class="p-3 rounded-xl text-sm font-medium" style="background:#DCFCE7;color:#166534">📧 Link enviado para ${esc(EMAIL)}. Abra o e-mail neste aparelho.</div>`
+:`${inp('E-mail',EMAIL,"EMAIL=this.value",'voce@email.com','email')}<button class="btn" onclick="sendLink()">Receber link de acesso</button>`}</div>`;}
+function vOnboard(){return `<div class="card rounded-2xl p-5 shadow-sm space-y-4 mt-6">
+<h2 class="font-bold text-xl">Como você vai usar o ConectaNav?</h2>
+<div class="grid grid-cols-2 gap-2">${['candidato','empresa'].map(r=>`<button onclick="OB.role='${r}';render()" class="chip rounded-xl p-3 text-sm font-semibold ${OB.role===r?'active':''}">${r==='candidato'?'🎓 Sou Candidato (16–29)':'🏪 Sou Empresa (PME)'}</button>`).join('')}</div>
+<label class="flex items-start gap-2 text-sm"><input type="checkbox" ${OB.consent?'checked':''} onchange="OB.consent=this.checked" class="mt-1"><span>Li e aceito a <a href="#" onclick="showPrivacy();return false" class="underline" style="color:var(--brand)">Política de Privacidade</a> e o tratamento dos meus dados.</span></label>
+<button class="btn" onclick="createProfile()">Continuar</button></div>`;}
+
+function ifmsBox(){
+  const cats=[...new Set(D.tags.map(t=>CAT[t]))];
+  return `<div class="card rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+<h2 class="font-bold text-lg">🎓 Cursos Livres do IFMS</h2>
+<p class="text-sm mut">Gratuitos, online, de 20 a 60 horas, com certificado digital. Quem estuda se destaca para os lojistas.</p>
+<p class="text-sm">${cats.length?`Pelas suas habilidades, vale olhar: ${cats.map(c=>`<span class="tag">${esc(c)}</span>`).join(' ')} (use o filtro <b>Categoria</b> no catálogo).`:'Marque suas habilidades acima e sugerimos categorias de curso.'}</p>
+<div class="grid grid-cols-2 gap-2"><a class="btn" href="${IFMS}" target="_blank" rel="noopener">Ver catálogo</a><a class="btn2" href="${AVA}" target="_blank" rel="noopener">Acessar plataforma</a></div>
+<h3 class="font-semibold text-sm pt-1">Meus cursos concluídos</h3>
+${D.courses.map((c,i)=>`<div class="flex items-center justify-between gap-2 text-sm p-2 rounded-lg" style="background:var(--brand-light)"><span>📜 ${esc(c.name)} · ${esc(c.hours)}h · <span class="mut">${esc(c.src)}</span></span><button onclick="delCourse(${i})" class="text-xs" style="color:#991B1B">remover</button></div>`).join('')||'<p class="text-xs mut">Nenhum curso adicionado ainda.</p>'}
+<div class="grid sm:grid-cols-2 gap-2">${inp('Nome do curso',C.name,"upC('name',this.value)",'Ex: Atendimento ao Cliente')}${inp('Carga horária (h)',C.hours,"upC('hours',this.value)",'20','number')}
+${sel('Origem',FONTES,C.src,"upC('src',this.value)")}${inp('Link de verificação do certificado (opcional)',C.url,"upC('url',this.value)",'https://...','url')}</div>
+<button class="btn2" onclick="addCourse()">➕ Adicionar curso</button>
+<p class="text-xs mut">Os cursos são informados por você. O link de verificação do certificado permite que a empresa confirme a autenticidade.</p></div>`;}
+
+function jobCard(j){
+  const a=S.apps.find(x=>x.job_id===j.id),closed=j.status==='encerrada',have=S.me?S.me.tags:D.tags,miss=j.tags.filter(t=>!have.includes(t));
+  const st=a&&STAT_UI[a.status];
+  return `<div class="card rounded-2xl p-4 shadow-sm">
+<div class="flex items-start justify-between gap-2"><div><h3 class="font-semibold">${esc(j.cargo)}</h3><p class="text-sm mut">${esc(j.company)} · 📍 ${esc(j.bairro)} · 🕐 ${esc(j.turno)}</p></div>
+<span class="text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0" style="background:${closed?'#FEE2E2':'#DCFCE7'};color:${closed?'#991B1B':'#166534'}">${closed?'🔒 Encerrada':'🟢 Aberta'}</span></div>
+<div class="flex flex-wrap gap-1.5 mt-2.5">${j.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+${miss.length&&!a?`<p class="text-xs mt-2.5 mut">📚 Para se destacar nesta vaga: ${esc(miss.join(', '))}. <a href="${IFMS}" target="_blank" rel="noopener" class="underline" style="color:var(--brand)">Veja cursos do IFMS</a></p>`:''}
+${a?`<div class="mt-3 text-xs font-semibold px-3 py-2 rounded-lg text-center" style="background:${st[0]};color:${st[1]}">${st[2]}</div>`
+:closed?`<button disabled class="btn mt-3 opacity-60" style="background:var(--border);color:var(--muted)">Inscrições Encerradas</button>`
+:`<button class="btn mt-3" onclick="applyJob('${j.id}')">Candidatar-se em 1 Clique</button>`}</div>`;}
+
+function vCand(){return `<div class="space-y-5">
+<div class="card rounded-2xl p-4 sm:p-5 shadow-sm">
+<div class="flex items-center justify-between mb-3 gap-2 flex-wrap"><h2 class="font-bold text-lg">👤 Meu Perfil</h2>
+${S.me?'<span class="tag" style="background:#DCFCE7;color:#166534">✅ Perfil Ativo</span>':'<span class="text-xs mut">Cadastro rápido, sem PDF</span>'}</div>
+<div class="grid sm:grid-cols-2 gap-3">
+${inp('Nome completo',D.name,"upD('name',this.value)",'Seu nome')}${inp('Idade',D.age,"upD('age',this.value)",'Ex: 19','number')}
+<div><label class="lb">📞 Telefone / WhatsApp</label><input type="tel" value="${esc(D.phone)}" oninput="maskPhone(this)" placeholder="(67) 99999-9999" class="fi"></div>
+${sel('📍 Bairro em Naviraí',BAIRROS,D.bairro,"setD('bairro',this.value)")}
+<div class="sm:col-span-2"><label class="lb">🕐 Turno disponível</label><div class="flex flex-wrap gap-1.5 mt-1.5">${TURNOS.map(t=>chip(t,D.turno===t,`setD('turno','${t}')`)).join('')}</div></div></div>
+<label class="flex items-start gap-2.5 mt-4 p-3 rounded-xl cursor-pointer" style="background:var(--brand-light)"><input type="checkbox" ${D.ifms?'checked':''} onchange="upD('ifms',this.checked)" class="mt-0.5 w-4 h-4"><span class="text-sm font-medium">🎓 Sou estudante do IFMS ou possuo cursos do Sistema S</span></label>
+<div class="mt-4"><label class="lb">Habilidades / Tags</label><div class="flex flex-wrap gap-1.5 mt-1.5">${SKILLS.map(s=>chip(s,D.tags.includes(s),`tog('D','${s}')`)).join('')}</div></div>
+<button class="btn mt-5" onclick="saveProfile()">💾 Salvar Meu Perfil</button>
+${'Notification' in window&&Notification.permission==='default'?'<button class="btn2 mt-2" onclick="askNotif()">🔔 Ativar alertas de candidatura</button>':''}</div>
+${ifmsBox()}
+<div><h2 class="font-bold text-lg mb-3">💼 Vagas Abertas em Naviraí</h2><div class="space-y-3">${S.jobs.map(jobCard).join('')||'<p class="text-sm mut">Nenhuma vaga publicada ainda.</p>'}</div></div></div>`;}
+
+function candRow(c,j){
+  const sc=score(c,j),un=S.unlocks.has(c.user_id),a=S.apps.find(x=>x.job_id===j.id&&x.candidate_id===c.user_id);
+  const col=sc>=70?['#DCFCE7','#166534']:sc>=40?['#FEF3C7','#92400E']:['#F3F4F6','#6B7280'];
+  const msg=encodeURIComponent(`Olá ${c.name}! Vi seu perfil no ConectaNav e gostaria de agendar uma entrevista para a vaga de ${j.cargo}. Podemos conversar?`);
+  return `<div class="rounded-xl p-3.5" style="border:1px solid var(--border)">
+<div class="flex items-start justify-between gap-3"><div><div class="flex items-center gap-2 flex-wrap"><h4 class="font-semibold">${esc(c.name)}</h4>
+${c.ifms?'<span class="tag text-[10px] font-bold">🎓 IFMS/Sistema S</span>':''}${a?'<span class="tag text-[10px] font-bold" style="background:#FEF3C7;color:#92400E">📥 Candidatou-se</span>':''}</div>
+<p class="text-xs mut mt-0.5">${esc(c.age)} anos · 📍 ${esc(c.bairro)} · 🕐 ${esc(c.turno)}</p></div>
+<div class="text-center shrink-0 px-2.5 py-1.5 rounded-xl" style="background:${col[0]};color:${col[1]}"><div class="text-lg font-extrabold leading-none">${sc}%</div><div class="text-[9px] font-medium mt-0.5">MATCH</div></div></div>
+<div class="flex flex-wrap gap-1.5 mt-2.5">${c.tags.map(t=>`<span class="tag ${j.tags.includes(t)?'font-semibold':''}">${esc(t)}</span>`).join('')}</div>
+${c.courses.length?`<div class="mt-2 text-xs space-y-0.5"><div class="font-semibold">📜 Cursos informados (${c.courses.length})</div>${c.courses.slice(0,4).map(k=>`<div class="mut">• ${esc(k.name)} (${esc(k.hours)}h, ${esc(k.src)}) ${/^https:\/\//.test(k.url||'')?`<a href="${esc(k.url)}" target="_blank" rel="noopener nofollow" class="underline" style="color:var(--brand)">verificar</a>`:''}</div>`).join('')}</div>`:''}
+${a?`<div class="mt-2"><label class="lb">Status da candidatura</label><select class="fi" onchange="setAppStatus('${a.id}',this.value)">${STAT.map(s=>`<option ${s===a.status?'selected':''}>${s}</option>`).join('')}</select></div>`:''}
+<div class="mt-3">${un&&S.phones[c.user_id]?`<a class="btn" style="background:#25D366" href="https://wa.me/${esc(waNum(S.phones[c.user_id]))}?text=${msg}" target="_blank" rel="noopener">💬 Iniciar Conversa no WhatsApp</a>`
+:`<button class="btn2" onclick="unlock('${c.user_id}')">🔒 Desbloquear Contato</button>`}</div></div>`;}
+
+function vEmp(){
+  const own=S.jobs.filter(j=>j.owner_id===S.user.id),job=own.find(j=>j.id===S.selJob),ed=!!S.editJob;
+  const ranked=job?S.cands.map(c=>({c,s:score(c,job)})).sort((a,b)=>b.s-a.s):[];
+  return `<div class="space-y-5">
+<div class="card rounded-2xl p-4 sm:p-5 shadow-sm"><h2 class="font-bold text-lg mb-3">${ed?'✏️ Editar Vaga':'📢 Publicar Nova Vaga'}</h2>
+<div class="grid sm:grid-cols-2 gap-3">${inp('Nome da Empresa',J.company,"upJ('company',this.value)",'Ex: Mercado Bom Preço')}${inp('Cargo',J.cargo,"upJ('cargo',this.value)",'Ex: Atendente de Loja')}
+${sel('📍 Bairro da Loja',BAIRROS,J.bairro,"setJ('bairro',this.value)")}
+<div><label class="lb">🕐 Turno Exigido</label><div class="flex flex-wrap gap-1.5 mt-1.5">${TURNOS.map(t=>chip(t,J.turno===t,`setJ('turno','${t}')`)).join('')}</div></div></div>
+<div class="mt-4"><label class="lb">Tags Exigidas</label><div class="flex flex-wrap gap-1.5 mt-1.5">${SKILLS.map(s=>chip(s,J.tags.includes(s),`tog('J','${s}')`)).join('')}</div></div>
+<div class="flex gap-2 mt-5"><button class="btn" onclick="saveJob()">${ed?'💾 Salvar Alterações':'📢 Publicar Vaga'}</button>${ed?'<button class="btn2" onclick="cancelEdit()">Cancelar</button>':''}</div></div>
+<div class="card rounded-2xl p-4 sm:p-5 shadow-sm"><h2 class="font-bold text-lg mb-3">🗂️ Minhas Vagas</h2><div class="space-y-2">
+${own.map(j=>`<div class="rounded-xl p-3 flex items-center justify-between gap-2 flex-wrap" style="border:1px solid var(--border)"><div class="text-sm"><b>${esc(j.cargo)}</b> <span class="mut">· ${esc(j.bairro)} · ${j.status==='aberta'?'🟢 Aberta':'🔒 Encerrada'}</span></div>
+<div class="flex gap-3 text-xs font-semibold"><button onclick="editJob('${j.id}')" style="color:var(--brand)">Editar</button><button onclick="toggleJob('${j.id}')" style="color:var(--brand)">${j.status==='aberta'?'Encerrar':'Reabrir'}</button><button onclick="delJob('${j.id}')" style="color:#991B1B">Excluir</button></div></div>`).join('')||'<p class="text-sm mut">Você ainda não publicou vagas.</p>'}</div></div>
+<div class="card rounded-2xl p-4 sm:p-5 shadow-sm"><div class="flex items-center justify-between mb-3 flex-wrap gap-2"><h2 class="font-bold text-lg">🎯 Painel de Triagem</h2>
+<span class="tag" style="background:${S.freeUsed?'#F3F4F6':'#DCFCE7'};color:${S.freeUsed?'#6B7280':'#166534'}">${S.freeUsed?'🎁 Franquia grátis usada':'🎁 1/1 Franquia Grátis disponível'}</span></div>
+${own.length?`<select onchange="pickJob(this.value)" class="fi mb-4">${own.map(j=>`<option value="${j.id}" ${j.id===S.selJob?'selected':''}>${esc(j.cargo)} — ${esc(j.company)}</option>`).join('')}</select>
+<div class="space-y-3">${ranked.map(r=>candRow(r.c,job)).join('')||'<p class="text-sm mut">Ainda não há candidatos cadastrados.</p>'}</div>`:'<p class="text-sm mut">Publique uma vaga para ver candidatos ordenados por Match Score.</p>'}</div></div>`;}
+
+function pixModal(){
+  if(!S.pix)return '';const c=S.cands.find(x=>x.user_id===S.pix.id),p=S.pix;
+  return `<div class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(0,0,0,.5)"><div class="card rounded-2xl p-5 w-full max-w-sm shadow-xl text-center">
+<h3 class="font-bold text-lg">Desbloquear Contato</h3>
+<p class="text-sm mut mt-1.5">Sua franquia grátis acabou. No <b>Pay-per-Hire</b> você paga só para liberar o contato de ${esc(c?c.name:'candidato')}.</p>
+<div class="my-3 py-2 rounded-xl" style="background:var(--brand-light)"><div class="text-2xl font-extrabold" style="color:var(--brand)">R$ 15,00</div><div class="text-xs mut">via Pix, liberação automática</div></div>
+${p.loading?'<p class="text-sm mut py-4">Gerando Pix…</p>':`<img alt="QR Code Pix" class="mx-auto w-44 h-44" src="data:image/png;base64,${esc(p.qr_base64)}"><button class="btn2 mt-2" onclick="copyPix()">Copiar código Pix</button><p class="text-xs mut mt-2">Aguardando pagamento… esta tela fecha sozinha quando confirmar.</p>`}
+<button class="mt-3 text-sm mut" onclick="cancelPix()">Cancelar</button></div></div>`;}
+
+function render(){
+  $('roleBadge').textContent=S.role?(S.role==='candidato'?'🎓 Candidato':'🏪 Empresa'):'';
+  let h;
+  if(!sb)h='<div class="card rounded-2xl p-5 mt-6"><h2 class="font-bold">Configuração pendente</h2><p class="text-sm mut mt-1">Preencha SUPABASE_URL e SUPABASE_ANON_KEY em <code>config.js</code> (veja o README).</p></div>';
+  else if(S.loading)h='<p class="text-center mut mt-10">Carregando…</p>';
+  else if(!S.user)h=vLogin();
+  else if(!S.role)h=vOnboard();
+  else h=(S.role==='candidato'?vCand():vEmp())+`<div class="flex justify-center gap-4 text-xs mut mt-8 flex-wrap"><a href="#" onclick="showPrivacy();return false" class="underline">Privacidade</a><button onclick="logout()" class="underline">Sair</button><button onclick="deleteAccount()" class="underline" style="color:#991B1B">Excluir minha conta</button></div>`;
+  $('app').innerHTML=h;
+  if(S.pix)$('modal').innerHTML=pixModal();
+}
+
+if(sb){
+  sb.auth.onAuthStateChange((_e,ses)=>{const u=ses&&ses.user;if(u&&S.user&&u.id===S.user.id)return;
+    if(u){resetS();S.user=u;setTimeout(loadAll,0);}else{resetS();S.loading=false;}render();});
+}else{S.loading=false;render();}
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
