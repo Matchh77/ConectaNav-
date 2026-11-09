@@ -118,10 +118,31 @@ function subscribe(){if(S.ch)return;
     .on('postgres_changes',{event:'*',schema:'public',table:'jobs'},f).subscribe();}
 
 // ---------- auth / LGPD ----------
-async function sendLink(){
-  if(!/^\S+@\S+\.\S+$/.test(EMAIL))return toast('⚠️ Informe um e-mail válido');
-  const r=await sb.auth.signInWithOtp({email:EMAIL,options:{emailRedirectTo:location.origin}});
-  if(r.error)return toast('⚠️ '+r.error.message);S.sent=true;render();}
+let AUTH={mode:'login',pw:'',pw2:''};
+const okEmail=()=>/^\S+@\S+\.\S+$/.test(EMAIL);
+function authMode(m){AUTH.mode=m;AUTH.pw='';AUTH.pw2='';S.sent=false;render();}
+async function signIn(){
+  if(!okEmail()||!AUTH.pw)return toast('⚠️ Informe e-mail e senha');
+  const r=await sb.auth.signInWithPassword({email:EMAIL,password:AUTH.pw});
+  if(r.error)return toast('⚠️ '+(r.error.message==='Invalid login credentials'?'E-mail ou senha incorretos':r.error.message));
+  AUTH.pw='';}
+async function signUp(){
+  if(!okEmail())return toast('⚠️ Informe um e-mail válido');
+  if(AUTH.pw.length<8)return toast('⚠️ A senha precisa ter ao menos 8 caracteres');
+  if(AUTH.pw!==AUTH.pw2)return toast('⚠️ As senhas não conferem');
+  const r=await sb.auth.signUp({email:EMAIL,password:AUTH.pw,options:{emailRedirectTo:location.origin}});
+  if(r.error)return toast('⚠️ '+r.error.message);
+  AUTH.pw=AUTH.pw2='';
+  if(!r.data.session){S.sent='confirm';render();}}
+async function resetPw(){
+  if(!okEmail())return toast('⚠️ Informe seu e-mail');
+  const r=await sb.auth.resetPasswordForEmail(EMAIL,{redirectTo:location.origin});
+  if(r.error)return toast('⚠️ '+r.error.message);S.sent='reset';render();}
+async function setNewPw(){
+  if(AUTH.pw.length<8||AUTH.pw!==AUTH.pw2)return toast('⚠️ Use 8+ caracteres e repita a mesma senha');
+  const r=await sb.auth.updateUser({password:AUTH.pw});
+  if(r.error)return toast('⚠️ '+r.error.message);
+  S.recovery=false;AUTH.pw=AUTH.pw2='';render();toast('✅ Senha alterada!');}
 async function createProfile(){
   if(!OB.consent)return toast('⚠️ É preciso aceitar a Política de Privacidade');
   const r=await sb.from('profiles').insert({id:S.user.id,role:OB.role});
@@ -198,10 +219,18 @@ function cancelPix(){closePix();render();}
 function copyPix(){navigator.clipboard.writeText(S.pix.qr_code).then(()=>toast('Código Pix copiado'));}
 
 // ---------- views ----------
-function vLogin(){return `<div class="card rounded-2xl p-5 shadow-sm space-y-3 mt-6">
-<h2 class="font-bold text-xl">Entre no ConectaNav</h2><p class="text-sm mut">Vagas do comércio e jovens talentos de Naviraí-MS. Enviamos um link de acesso para o seu e-mail, sem senha.</p>
-${S.sent?`<div class="p-3 rounded-xl text-sm font-medium" style="background:#DCFCE7;color:#166534">📧 Link enviado para ${esc(EMAIL)}. Abra o e-mail neste aparelho.</div>`
-:`${inp('E-mail',EMAIL,"EMAIL=this.value",'voce@email.com','email')}<button class="btn" onclick="sendLink()">Receber link de acesso</button>`}</div>`;}
+function vLogin(){
+  const m=AUTH.mode,d=S.sent;
+  const msg=d==='confirm'?'📧 Cadastro feito! Confirme seu e-mail pelo link que enviamos e depois entre com sua senha.':d==='reset'?'📧 Enviamos um link para você criar uma nova senha.':'';
+  return `<div class="card rounded-2xl p-5 shadow-sm space-y-3 mt-6">
+<h2 class="font-bold text-xl">${m==='signup'?'Criar conta':m==='reset'?'Recuperar senha':'Entrar no ConectaNav'}</h2>
+<p class="text-sm mut">Vagas do comércio e jovens talentos de Naviraí-MS.</p>
+${msg?`<div class="p-3 rounded-xl text-sm font-medium" style="background:#DCFCE7;color:#166534">${msg}</div>`:`${inp('E-mail',EMAIL,"EMAIL=this.value",'voce@email.com','email')}
+${m!=='reset'?inp('Senha',AUTH.pw,"AUTH.pw=this.value",'mínimo 8 caracteres','password'):''}
+${m==='signup'?inp('Repita a senha',AUTH.pw2,"AUTH.pw2=this.value",'','password'):''}
+<button class="btn" onclick="${m==='signup'?'signUp()':m==='reset'?'resetPw()':'signIn()'}">${m==='signup'?'Criar conta':m==='reset'?'Enviar link':'Entrar'}</button>`}
+<div class="flex justify-between text-sm font-medium" style="color:var(--brand)">${m==='login'?`<button onclick="authMode('signup')">Criar conta</button><button onclick="authMode('reset')">Esqueci a senha</button>`:`<button onclick="authMode('login')">← Voltar para entrar</button>`}</div></div>`;}
+function vNewPw(){return `<div class="card rounded-2xl p-5 shadow-sm space-y-3 mt-6"><h2 class="font-bold text-xl">Crie sua nova senha</h2>${inp('Nova senha',AUTH.pw,"AUTH.pw=this.value",'mínimo 8 caracteres','password')}${inp('Repita a senha',AUTH.pw2,"AUTH.pw2=this.value",'','password')}<button class="btn" onclick="setNewPw()">Salvar senha</button></div>`;}
 function vOnboard(){return `<div class="card rounded-2xl p-5 shadow-sm space-y-4 mt-6">
 <h2 class="font-bold text-xl">Como você vai usar o ConectaNav?</h2>
 <div class="grid grid-cols-2 gap-2">${['candidato','empresa'].map(r=>`<button onclick="OB.role='${r}';render()" class="chip rounded-xl p-3 text-sm font-semibold ${OB.role===r?'active':''}">${r==='candidato'?'🎓 Sou Candidato (16–29)':'🏪 Sou Empresa (PME)'}</button>`).join('')}</div>
@@ -297,6 +326,7 @@ function render(){
   let h;
   if(!sb)h='<div class="card rounded-2xl p-5 mt-6"><h2 class="font-bold">Configuração pendente</h2><p class="text-sm mut mt-1">Preencha SUPABASE_URL e SUPABASE_ANON_KEY em <code>config.js</code> (veja o README).</p></div>';
   else if(S.loading)h='<p class="text-center mut mt-10">Carregando…</p>';
+  else if(S.user&&S.recovery)h=vNewPw();
   else if(!S.user)h=vLogin();
   else if(!S.role)h=vOnboard();
   else h=(S.role==='candidato'?vCand():vEmp())+`<div class="flex justify-center gap-4 text-xs mut mt-8 flex-wrap"><a href="#" onclick="showPrivacy();return false" class="underline">Privacidade</a><button onclick="logout()" class="underline">Sair</button><button onclick="deleteAccount()" class="underline" style="color:#991B1B">Excluir minha conta</button></div>`;
@@ -305,8 +335,9 @@ function render(){
 }
 
 if(sb){
-  sb.auth.onAuthStateChange((_e,ses)=>{const u=ses&&ses.user;if(u&&S.user&&u.id===S.user.id)return;
-    if(u){resetS();S.user=u;setTimeout(loadAll,0);}else{resetS();S.loading=false;}render();});
+  sb.auth.onAuthStateChange((_e,ses)=>{const u=ses&&ses.user,rec=_e==='PASSWORD_RECOVERY';
+    if(u&&S.user&&u.id===S.user.id){if(rec){S.recovery=true;render();}return;}
+    if(u){resetS();S.user=u;if(rec)S.recovery=true;setTimeout(loadAll,0);}else{resetS();S.loading=false;}render();});
 }else{S.loading=false;render();}
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
 </script>
